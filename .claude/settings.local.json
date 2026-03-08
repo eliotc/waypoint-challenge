@@ -1,0 +1,15 @@
+{
+  "permissions": {
+    "allow": [
+      "Bash(pip show:*)",
+      "Bash(python3:*)",
+      "Bash(.venv/bin/python:*)",
+      "Bash(brew info:*)",
+      "Bash(docker:*)",
+      "Bash(defaults read:*)",
+      "Bash(.venv/bin/pip install:*)",
+      "WebFetch(domain:google.github.io)",
+      "Bash(python:*)"
+    ]
+  }
+}

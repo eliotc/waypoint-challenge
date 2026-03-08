@@ -1,0 +1,1181 @@
+<!DOCTYPE html>
+<html lang="en">
+
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>Waypoint — Kingsford University</title>
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link href="https://fonts.googleapis.com/css2?family=Google+Sans:wght@400;500;600&display=swap" rel="stylesheet">
+  <style>
+    *,
+    *::before,
+    *::after {
+      box-sizing: border-box;
+      margin: 0;
+      padding: 0;
+    }
+
+    :root {
+      --font-primary: "Google Sans", -apple-system, BlinkMacSystemFont, sans-serif;
+      --color-primary: rgb(18, 19, 23);
+      --color-secondary: rgb(69, 71, 77);
+      --color-tertiary: rgb(106, 106, 113);
+      --bg-primary: #FFFFFF;
+      --bg-secondary: rgba(183, 191, 217, 0.1);
+      --border-primary: rgba(33, 34, 38, 0.06);
+      --border-secondary: rgba(33, 34, 38, 0.12);
+      --accent-teal: #0D9488;
+      --accent-teal-hover: #0B7C72;
+      --accent-teal-light: rgba(13, 148, 136, 0.06);
+      --radius-sm: 8px;
+      --radius-lg: 32px;
+      --radius-rounded: 9999px;
+      --ease-out-quint: cubic-bezier(.23, 1, .32, 1);
+    }
+
+    html,
+    body {
+      height: 100%;
+      font-family: var(--font-primary);
+      background: #f0f4f8;
+      color: var(--color-primary);
+    }
+
+    /* ── Full-page layout ── */
+    .app {
+      display: grid;
+      grid-template-columns: 460px 1fr;
+      height: 100vh;
+      gap: 0;
+    }
+
+    /* ── Left: agent panel (VoZara style) ── */
+    .via-panel {
+      background: var(--bg-primary);
+      box-shadow: 0 0 0 1px var(--border-primary), 12px 0 40px rgba(0, 0, 0, 0.06);
+      display: flex;
+      flex-direction: column;
+      overflow: hidden;
+      position: relative;
+      z-index: 10;
+    }
+
+    /* Header */
+    .via-header {
+      display: flex;
+      align-items: center;
+      gap: 14px;
+      padding: 24px 24px 16px;
+      border-bottom: 1px solid var(--border-primary);
+    }
+
+    .via-avatar {
+      position: relative;
+      width: 52px;
+      height: 52px;
+      border-radius: 50%;
+      background: linear-gradient(135deg, var(--accent-teal), #06b6d4);
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      flex-shrink: 0;
+      transition: box-shadow 0.3s ease;
+      box-shadow: 0 0 0 3px rgba(13, 148, 136, 0.25);
+    }
+
+    .via-avatar.via-speaking {
+      animation: viaPulseRing 1.5s ease-in-out infinite;
+    }
+
+    @keyframes viaPulseRing {
+
+      0%,
+      100% {
+        box-shadow: 0 0 0 3px rgba(13, 148, 136, 0.25);
+      }
+
+      50% {
+        box-shadow: 0 0 0 8px rgba(13, 148, 136, 0.12), 0 0 20px rgba(13, 148, 136, 0.15);
+      }
+    }
+
+    .via-avatar-ring {
+      position: absolute;
+      inset: -4px;
+      border-radius: 50%;
+      border: 2px solid transparent;
+      transition: border-color 0.3s ease;
+    }
+
+    .via-avatar-ring.via-listening {
+      border-color: var(--accent-teal);
+      animation: viaListenPulse 1s ease-in-out infinite;
+    }
+
+    @keyframes viaListenPulse {
+
+      0%,
+      100% {
+        transform: scale(1);
+        opacity: 1;
+      }
+
+      50% {
+        transform: scale(1.08);
+        opacity: 0.7;
+      }
+    }
+
+    .via-avatar-letter {
+      font-size: 22px;
+      font-weight: 600;
+      color: white;
+      line-height: 1;
+    }
+
+    .via-header-info {
+      flex: 1;
+      min-width: 0;
+    }
+
+    .via-name {
+      font-size: 17px;
+      font-weight: 600;
+      color: var(--color-primary);
+      margin: 0;
+      line-height: 1.2;
+    }
+
+    .via-subtitle {
+      font-size: 13px;
+      color: var(--color-tertiary);
+      margin: 4px 0 0;
+      line-height: 1.3;
+    }
+
+    /* Status indicator in header */
+    .via-status {
+      display: flex;
+      align-items: center;
+      gap: 5px;
+      font-size: 12px;
+      color: var(--color-tertiary);
+    }
+
+    .via-status-dot {
+      width: 7px;
+      height: 7px;
+      border-radius: 50%;
+      background: #d1d5db;
+      transition: background 0.3s, box-shadow 0.3s;
+    }
+
+    .via-status-dot.connected {
+      background: var(--accent-teal);
+      box-shadow: 0 0 0 3px rgba(13, 148, 136, 0.2);
+    }
+
+    /* Voice bar */
+    .via-voice-bar {
+      display: flex;
+      align-items: center;
+      gap: 12px;
+      padding: 0 24px;
+      background: var(--bg-secondary);
+      border-bottom: 1px solid var(--border-primary);
+      min-height: 0;
+      max-height: 0;
+      overflow: hidden;
+      opacity: 0;
+      transition: all 0.35s var(--ease-out-quint);
+    }
+
+    .via-voice-bar.via-active {
+      opacity: 1;
+      max-height: 60px;
+      padding: 10px 24px;
+    }
+
+    .via-wave {
+      display: flex;
+      align-items: center;
+      gap: 3px;
+      height: 20px;
+    }
+
+    .via-wave span {
+      display: block;
+      width: 3px;
+      height: 4px;
+      background: var(--accent-teal);
+      border-radius: 2px;
+      opacity: 0.35;
+      transition: height 0.15s ease, opacity 0.15s ease;
+    }
+
+    .via-wave.via-wave-active span {
+      animation: viaWaveAnim 1.2s ease-in-out infinite;
+    }
+
+    .via-wave.via-wave-active span:nth-child(1) {
+      animation-delay: -0.36s;
+    }
+
+    .via-wave.via-wave-active span:nth-child(2) {
+      animation-delay: -0.24s;
+    }
+
+    .via-wave.via-wave-active span:nth-child(3) {
+      animation-delay: -0.12s;
+    }
+
+    .via-wave.via-wave-active span:nth-child(4) {
+      animation-delay: 0.00s;
+    }
+
+    .via-wave.via-wave-active span:nth-child(5) {
+      animation-delay: 0.12s;
+    }
+
+    .via-wave.via-wave-active span:nth-child(6) {
+      animation-delay: 0.24s;
+    }
+
+    .via-wave.via-wave-active span:nth-child(7) {
+      animation-delay: 0.36s;
+    }
+
+    @keyframes viaWaveAnim {
+
+      0%,
+      100% {
+        height: 4px;
+        opacity: 0.35;
+      }
+
+      50% {
+        height: 18px;
+        opacity: 1;
+      }
+    }
+
+    .via-voice-label {
+      font-size: 12px;
+      color: var(--color-tertiary);
+      white-space: nowrap;
+    }
+
+    /* Messages */
+    .via-messages {
+      flex: 1;
+      overflow-y: auto;
+      padding: 16px 20px;
+      display: flex;
+      flex-direction: column;
+      gap: 10px;
+      min-height: 0;
+      scroll-behavior: smooth;
+    }
+
+    .via-messages::-webkit-scrollbar {
+      width: 5px;
+    }
+
+    .via-messages::-webkit-scrollbar-thumb {
+      background: rgba(0, 0, 0, 0.12);
+      border-radius: 3px;
+    }
+
+    .via-msg {
+      display: flex;
+      animation: viaMsgIn 0.3s var(--ease-out-quint);
+    }
+
+    @keyframes viaMsgIn {
+      from {
+        opacity: 0;
+        transform: translateY(8px);
+      }
+
+      to {
+        opacity: 1;
+        transform: translateY(0);
+      }
+    }
+
+    .via-msg-user {
+      justify-content: flex-end;
+    }
+
+    .via-msg-ai {
+      justify-content: flex-start;
+    }
+
+    .via-msg-bubble {
+      max-width: 82%;
+      padding: 10px 16px;
+      border-radius: 18px;
+      font-size: 14px;
+      font-family: var(--font-primary);
+      line-height: 1.55;
+      word-wrap: break-word;
+    }
+
+    .via-msg-ai .via-msg-bubble {
+      background: var(--bg-secondary);
+      color: var(--color-primary);
+      border-bottom-left-radius: 6px;
+    }
+
+    .via-msg-user .via-msg-bubble {
+      background: var(--accent-teal);
+      color: white;
+      border-bottom-right-radius: 6px;
+    }
+
+    .via-msg-bubble.via-typing {
+      opacity: 0.7;
+    }
+
+    /* Input bar */
+    .via-input-bar {
+      display: flex;
+      align-items: center;
+      gap: 10px;
+      padding: 12px 16px;
+      border-top: 1px solid var(--border-primary);
+      background: var(--bg-primary);
+    }
+
+    .via-mode-btn {
+      width: 40px;
+      height: 40px;
+      border-radius: 50%;
+      border: 1px solid var(--border-secondary);
+      background: var(--bg-primary);
+      color: var(--accent-teal);
+      cursor: pointer;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      transition: all 0.2s ease;
+      flex-shrink: 0;
+    }
+
+    .via-mode-btn:hover:not(:disabled) {
+      background: var(--accent-teal-light);
+      border-color: var(--accent-teal);
+      transform: scale(1.08);
+    }
+
+    .via-mode-btn.via-active {
+      background: var(--accent-teal);
+      color: white;
+      border-color: var(--accent-teal);
+      animation: viaMicPulse 1.5s ease-in-out infinite;
+    }
+
+    .via-mode-btn:disabled {
+      opacity: 0.4;
+      cursor: not-allowed;
+    }
+
+    @keyframes viaMicPulse {
+
+      0%,
+      100% {
+        box-shadow: 0 0 0 0 rgba(13, 148, 136, 0.4);
+      }
+
+      50% {
+        box-shadow: 0 0 0 6px rgba(13, 148, 136, 0);
+      }
+    }
+
+    .via-mute-bar-btn {
+      margin-left: auto;
+      flex-shrink: 0;
+      width: 28px;
+      height: 28px;
+      border-radius: 50%;
+      border: 1px solid rgba(13, 148, 136, 0.3);
+      background: transparent;
+      color: var(--accent-teal);
+      cursor: pointer;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      transition: all 0.2s ease;
+    }
+
+    .via-mute-bar-btn:hover:not(:disabled) {
+      background: rgba(13, 148, 136, 0.1);
+    }
+
+    .via-mute-bar-btn.via-muted {
+      background: #fee2e2;
+      color: #ef4444;
+      border-color: #fca5a5;
+    }
+
+    .via-mute-bar-btn.via-muted:hover:not(:disabled) {
+      background: #fecaca;
+    }
+
+    .via-mute-bar-btn:disabled {
+      opacity: 0.35;
+      cursor: not-allowed;
+    }
+
+    .via-input {
+      flex: 1;
+      padding: 10px 16px;
+      border: 1.5px solid var(--border-secondary);
+      border-radius: var(--radius-rounded);
+      font-size: 15px;
+      font-family: var(--font-primary);
+      background: var(--bg-primary);
+      color: var(--color-primary);
+      outline: none;
+      transition: border-color 0.2s ease, box-shadow 0.2s ease;
+    }
+
+    .via-input:focus {
+      border-color: var(--accent-teal);
+      box-shadow: 0 0 0 3px rgba(13, 148, 136, 0.1);
+    }
+
+    .via-input::placeholder {
+      color: var(--color-tertiary);
+    }
+
+    .via-input:disabled {
+      opacity: 0.5;
+      cursor: not-allowed;
+    }
+
+    .via-send {
+      width: 40px;
+      height: 40px;
+      border-radius: 50%;
+      border: none;
+      background: var(--accent-teal);
+      color: white;
+      cursor: pointer;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      transition: all 0.2s ease;
+      flex-shrink: 0;
+    }
+
+    .via-send:hover:not(:disabled) {
+      background: var(--accent-teal-hover);
+      transform: scale(1.05);
+    }
+
+    .via-send:disabled {
+      opacity: 0.4;
+      cursor: not-allowed;
+    }
+
+    /* Powered by */
+    .via-powered {
+      text-align: center;
+      padding: 8px 16px 12px;
+      font-size: 11px;
+      color: var(--color-tertiary);
+      letter-spacing: 0.3px;
+    }
+
+    .via-powered strong {
+      color: var(--accent-teal);
+      font-weight: 600;
+    }
+
+    /* ── Right: card sidebar ── */
+    .sidebar {
+      display: flex;
+      flex-direction: column;
+      background: #f8fafc;
+      overflow: hidden;
+    }
+
+    .sidebar-header {
+      padding: 24px 24px 16px;
+      font-size: 12px;
+      font-weight: 600;
+      text-transform: uppercase;
+      letter-spacing: 0.08em;
+      color: var(--color-tertiary);
+      border-bottom: 1px solid var(--border-primary);
+      background: white;
+    }
+
+    .sidebar-scroll {
+      flex: 1;
+      overflow-y: auto;
+      padding: 24px;
+      display: flex;
+      flex-direction: column;
+      gap: 16px;
+    }
+
+    .sidebar-scroll::-webkit-scrollbar {
+      width: 5px;
+    }
+
+    .sidebar-scroll::-webkit-scrollbar-thumb {
+      background: rgba(0, 0, 0, 0.12);
+      border-radius: 3px;
+    }
+
+    .no-cards {
+      flex: 1;
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+      justify-content: center;
+      color: var(--color-tertiary);
+      gap: 12px;
+      text-align: center;
+      padding: 60px 20px;
+    }
+
+    .no-cards-icon {
+      color: var(--color-tertiary);
+      opacity: 0.5;
+      margin-bottom: 4px;
+    }
+
+    .no-cards p {
+      font-size: 14px;
+      line-height: 1.5;
+      max-width: 240px;
+    }
+
+    /* Cards */
+    .card {
+      background: white;
+      border: 1px solid rgba(13, 148, 136, 0.15);
+      border-radius: 16px;
+      overflow: hidden;
+      box-shadow: 0 4px 12px rgba(0, 0, 0, 0.03), 0 1px 3px rgba(0, 0, 0, 0.04);
+      transition: transform 0.2s ease, box-shadow 0.2s ease;
+      animation: viaMsgIn 0.3s var(--ease-out-quint);
+    }
+
+    .card:hover {
+      transform: translateY(-2px);
+      box-shadow: 0 8px 24px rgba(13, 148, 136, 0.08), 0 2px 8px rgba(13, 148, 136, 0.04);
+      border-color: rgba(13, 148, 136, 0.3);
+    }
+
+    .card-type-bar {
+      padding: 10px 16px;
+      font-size: 11px;
+      font-weight: 700;
+      text-transform: uppercase;
+      letter-spacing: 0.08em;
+      display: flex;
+      align-items: center;
+      gap: 6px;
+      border-bottom: 1px solid rgba(0, 0, 0, 0.03);
+    }
+
+    .card-type-bar.course {
+      background: rgba(13, 148, 136, 0.05);
+      color: var(--accent-teal);
+    }
+
+    .card-type-bar.event {
+      background: rgba(99, 102, 241, 0.05);
+      color: #6366f1;
+    }
+
+    .card-type-bar.booking {
+      background: rgba(13, 148, 136, 0.08);
+      color: var(--accent-teal);
+    }
+
+    .card-type-bar.info {
+      background: rgba(245, 158, 11, 0.05);
+      color: #d97706;
+    }
+
+    .card-body {
+      padding: 16px;
+    }
+
+    .card-title {
+      font-size: 16px;
+      font-weight: 600;
+      margin-bottom: 8px;
+      line-height: 1.35;
+      color: var(--color-primary);
+    }
+
+    .tags {
+      display: flex;
+      flex-wrap: wrap;
+      gap: 6px;
+      margin-bottom: 12px;
+    }
+
+    .tag {
+      font-size: 12px;
+      font-weight: 500;
+      padding: 4px 10px;
+      border-radius: var(--radius-rounded);
+      background: rgba(13, 148, 136, 0.06);
+      color: var(--accent-teal);
+      border: 1px solid rgba(13, 148, 136, 0.15);
+    }
+
+    .card-detail {
+      font-size: 13px;
+      color: var(--color-secondary);
+      line-height: 1.5;
+      margin-bottom: 6px;
+      display: flex;
+      gap: 6px;
+      align-items: flex-start;
+    }
+
+    .card-detail svg {
+      flex-shrink: 0;
+      margin-top: 2px;
+    }
+
+    .card-fee {
+      font-size: 14px;
+      font-weight: 600;
+      color: var(--color-primary);
+      margin-top: 10px;
+      padding-top: 10px;
+      border-top: 1px solid rgba(0, 0, 0, 0.05);
+    }
+
+    .card-spots {
+      font-size: 13px;
+      font-weight: 500;
+      margin-top: 8px;
+      display: inline-flex;
+      padding: 4px 10px;
+      border-radius: 6px;
+    }
+
+    .card-spots.low {
+      color: #d946ef;
+      background: rgba(217, 70, 239, 0.1);
+    }
+
+    .card-spots.open {
+      color: var(--accent-teal);
+      background: rgba(13, 148, 136, 0.1);
+    }
+
+    .booking-ref {
+      font-size: 20px;
+      font-weight: 700;
+      color: var(--accent-teal);
+      letter-spacing: 0.04em;
+      margin: 4px 0 8px;
+    }
+  </style>
+</head>
+
+<body>
+  <div class="app">
+
+    <!-- Left: VoZara-style agent panel -->
+    <div class="via-panel">
+
+      <div class="via-header">
+        <div class="via-avatar" id="viaAvatar">
+          <div class="via-avatar-ring" id="viaAvatarRing"></div>
+          <span class="via-avatar-letter">C</span>
+        </div>
+        <div class="via-header-info">
+          <h3 class="via-name">Clara</h3>
+          <p class="via-subtitle" id="viaSubtitle">Waypoint · Kingsford University</p>
+        </div>
+        <div class="via-status">
+          <div class="via-status-dot" id="statusDot"></div>
+          <span id="statusLabel">Connecting…</span>
+        </div>
+      </div>
+
+      <div class="via-voice-bar" id="viaVoiceBar">
+        <div class="via-wave" id="viaWave">
+          <span></span><span></span><span></span><span></span><span></span><span></span><span></span>
+        </div>
+        <span class="via-voice-label" id="viaVoiceLabel">Voice active — speak or type</span>
+        <button class="via-mute-bar-btn" id="muteBtn" disabled title="Mute microphone">
+          <svg width="16" height="16" viewBox="0 0 24 24" fill="currentColor">
+            <path d="M12 14c1.66 0 3-1.34 3-3V5c0-1.66-1.34-3-3-3S9 3.34 9 5v6c0 1.66 1.34 3 3 3z" />
+            <path
+              d="M17 11c0 2.76-2.24 5-5 5s-5-2.24-5-5H5c0 3.53 2.61 6.43 6 6.92V21h2v-3.08c3.39-.49 6-3.39 6-6.92h-2z" />
+          </svg>
+        </button>
+      </div>
+
+      <div class="via-messages" id="viaMessages">
+        <div class="via-msg via-msg-ai" id="emptyMsg">
+          <div class="via-msg-bubble">Connecting to Clara…</div>
+        </div>
+      </div>
+
+      <div class="via-input-bar">
+        <button class="via-mode-btn" id="micBtn" disabled title="Tap to speak">
+          <svg width="18" height="18" viewBox="0 0 24 24" fill="currentColor">
+            <path d="M12 14c1.66 0 3-1.34 3-3V5c0-1.66-1.34-3-3-3S9 3.34 9 5v6c0 1.66 1.34 3 3 3z" />
+            <path
+              d="M17 11c0 2.76-2.24 5-5 5s-5-2.24-5-5H5c0 3.53 2.61 6.43 6 6.92V21h2v-3.08c3.39-.49 6-3.39 6-6.92h-2z" />
+          </svg>
+        </button>
+        <input class="via-input" id="textInput" type="text" placeholder="Type a message…" disabled autocomplete="off" />
+        <button class="via-send" id="sendBtn" disabled>
+          <svg width="16" height="16" viewBox="0 0 24 24" fill="currentColor">
+            <path d="M2.01 21L23 12 2.01 3 2 10l15 2-15 2z" />
+          </svg>
+        </button>
+      </div>
+
+      <div class="via-powered"><strong>Waypoint</strong> · Powered by Google ADK</div>
+    </div>
+
+    <!-- Right: card sidebar -->
+    <div class="sidebar">
+      <div class="sidebar-header">Course &amp; Event Cards</div>
+      <div class="sidebar-scroll" id="sidebarScroll">
+        <div class="no-cards" id="noCards">
+          <div class="no-cards-icon">
+            <svg width="32" height="32" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5">
+              <path
+                d="M9 5H7a2 2 0 00-2 2v12a2 2 0 002 2h10a2 2 0 002-2V7a2 2 0 00-2-2h-2M9 5a2 2 0 002 2h2a2 2 0 002-2M9 5a2 2 0 012-2h2a2 2 0 012 2m-3 7h3m-3 4h3m-6-4h.01M9 16h.01" />
+            </svg>
+          </div>
+          <p>Cards will appear here as Clara finds courses, events, and information for you.</p>
+        </div>
+      </div>
+    </div>
+
+  </div>
+
+  <script>
+    // ── Config ────────────────────────────────────────────────────────────────────
+    const WS_URL = `ws://${location.host}/ws/${crypto.randomUUID()}`;
+    const INPUT_RATE = 16000;
+    const OUTPUT_RATE = 24000;
+
+    // ── State ─────────────────────────────────────────────────────────────────────
+    let ws = null, recording = false, muted = false;
+    let audioCtxIn = null, audioCtxOut = null, workletNode = null, mediaStream = null;
+    let nextPlayTime = 0;
+    let agentMsgEl = null, agentBuffer = "", agentSpeaking = false;
+    let userMsgEl = null, userBuffer = "";
+
+    // ── DOM ───────────────────────────────────────────────────────────────────────
+    const micBtn = document.getElementById("micBtn");
+    const muteBtn = document.getElementById("muteBtn");
+    const textInput = document.getElementById("textInput");
+    const sendBtn = document.getElementById("sendBtn");
+    const messages = document.getElementById("viaMessages");
+    const emptyMsg = document.getElementById("emptyMsg");
+    const sidebarScroll = document.getElementById("sidebarScroll");
+    const noCards = document.getElementById("noCards");
+    const statusDot = document.getElementById("statusDot");
+    const statusLabel = document.getElementById("statusLabel");
+    const avatar = document.getElementById("viaAvatar");
+    const avatarRing = document.getElementById("viaAvatarRing");
+    const voiceBar = document.getElementById("viaVoiceBar");
+    const wave = document.getElementById("viaWave");
+    const voiceLabel = document.getElementById("viaVoiceLabel");
+
+    // ── WebSocket ─────────────────────────────────────────────────────────────────
+    function connect() {
+      ws = new WebSocket(WS_URL);
+      ws.binaryType = "arraybuffer";
+
+      ws.onopen = () => {
+        setStatus("connected", "Connected");
+        micBtn.disabled = false;
+        textInput.disabled = false;
+        sendBtn.disabled = false;
+        // voice bar stays hidden until user speaks or Clara responds
+        emptyMsg.querySelector(".via-msg-bubble").textContent =
+          "Hi! I'm Clara, your Kingsford University course counsellor on Waypoint. Speak or type to get started.";
+      };
+
+      ws.onclose = () => {
+        setStatus("", "Reconnecting…");
+        micBtn.disabled = true; textInput.disabled = true; sendBtn.disabled = true;
+        voiceBar.classList.remove("via-active");
+        stopRecording();
+        setTimeout(connect, 3000);
+      };
+
+      ws.onerror = () => ws.close();
+
+      ws.onmessage = (ev) => {
+        if (ev.data instanceof ArrayBuffer) {
+          playPCM(ev.data);
+        } else {
+          handleMessage(JSON.parse(ev.data));
+        }
+      };
+    }
+
+    function handleMessage(msg) {
+      switch (msg.type) {
+        case "transcript":
+          if (msg.text && !msg.text.trim().startsWith("**")) {
+            if (msg.role === "agent") {
+              appendOrUpdateAgent(msg.text);
+            } else if (msg.final) {
+              // Final complete transcript — replace any fragmented partials
+              userBuffer = msg.text.trim();
+              if (userMsgEl) userMsgEl.querySelector(".via-msg-bubble").textContent = userBuffer;
+              else appendOrUpdateUser(msg.text);
+            } else {
+              appendOrUpdateUser(msg.text);
+            }
+          }
+          break;
+        case "turn_complete":
+          flushAgent();
+          flushUser();
+          setAgentSpeaking(false);
+          break;
+        case "card":
+          renderCard(msg);
+          break;
+        case "error":
+          const errorIcon = `<svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" style="display:inline-block;vertical-align:middle;margin-right:4px;margin-top:-2px"><path d="M10.29 3.86L1.82 18a2 2 0 0 0 1.71 3h16.94a2 2 0 0 0 1.71-3L13.71 3.86a2 2 0 0 0-3.42 0z"></path><line x1="12" y1="9" x2="12" y2="13"></line><line x1="12" y1="17" x2="12.01" y2="17"></line></svg>`;
+          appendMsg("ai", `${errorIcon} ${msg.message}`, true);
+          break;
+      }
+    }
+
+    // ── Messages ──────────────────────────────────────────────────────────────────
+    function removeEmptyMsg() {
+      if (emptyMsg?.parentNode) emptyMsg.remove();
+    }
+
+    function appendMsg(role, text, isHtml = false) {
+      removeEmptyMsg();
+      const wrap = document.createElement("div");
+      wrap.className = `via-msg via-msg-${role === "user" ? "user" : "ai"}`;
+      const bubble = document.createElement("div");
+      bubble.className = "via-msg-bubble";
+      if (isHtml) bubble.innerHTML = text;
+      else bubble.textContent = text;
+      wrap.appendChild(bubble);
+      messages.appendChild(wrap);
+      messages.scrollTop = messages.scrollHeight;
+      return wrap;
+    }
+
+    function appendOrUpdateUser(text) {
+      userBuffer += (userBuffer && !userBuffer.endsWith(" ") ? " " : "") + text;
+      if (!userMsgEl) {
+        removeEmptyMsg();
+        userMsgEl = document.createElement("div");
+        userMsgEl.className = "via-msg via-msg-user";
+        const bubble = document.createElement("div");
+        bubble.className = "via-msg-bubble via-typing";
+        userMsgEl.appendChild(bubble);
+        messages.appendChild(userMsgEl);
+      }
+      userMsgEl.querySelector(".via-msg-bubble").textContent = userBuffer;
+      messages.scrollTop = messages.scrollHeight;
+    }
+
+    function flushUser() {
+      if (userMsgEl) {
+        userMsgEl.querySelector(".via-msg-bubble").classList.remove("via-typing");
+        userMsgEl = null;
+      }
+      userBuffer = "";
+    }
+
+    function appendOrUpdateAgent(text) {
+      agentBuffer = text;  // out_tx arrives as one final complete event — replace, don't append
+      setAgentSpeaking(true);
+      if (!agentMsgEl) {
+        removeEmptyMsg();
+        agentMsgEl = document.createElement("div");
+        agentMsgEl.className = "via-msg via-msg-ai";
+        const bubble = document.createElement("div");
+        bubble.className = "via-msg-bubble via-typing";
+        agentMsgEl.appendChild(bubble);
+        messages.appendChild(agentMsgEl);
+      }
+      agentMsgEl.querySelector(".via-msg-bubble").textContent = agentBuffer;
+      messages.scrollTop = messages.scrollHeight;
+    }
+
+    function flushAgent() {
+      if (agentMsgEl) {
+        agentMsgEl.querySelector(".via-msg-bubble").classList.remove("via-typing");
+        agentMsgEl = null;
+      }
+      agentBuffer = "";
+    }
+
+    function setAgentSpeaking(speaking) {
+      agentSpeaking = speaking;
+      if (speaking) {
+        voiceBar.classList.add("via-active");
+        wave.classList.add("via-wave-active");
+        voiceLabel.textContent = "Clara is speaking…";
+        avatar.classList.add("via-speaking");
+        avatarRing.classList.remove("via-listening");
+      } else {
+        avatar.classList.remove("via-speaking");
+        wave.classList.remove("via-wave-active");
+        if (recording) {
+          voiceLabel.textContent = "Listening…";
+          avatarRing.classList.add("via-listening");
+        } else {
+          voiceBar.classList.remove("via-active");
+        }
+      }
+    }
+
+    function setUserListening(listening) {
+      if (listening) {
+        voiceBar.classList.add("via-active");
+        avatarRing.classList.add("via-listening");
+        avatar.classList.remove("via-speaking");
+        wave.classList.remove("via-wave-active");
+        voiceLabel.textContent = "Listening…";
+      } else {
+        avatarRing.classList.remove("via-listening");
+        if (!agentSpeaking) {
+          voiceBar.classList.remove("via-active");
+        }
+      }
+    }
+
+    // ── Cards ─────────────────────────────────────────────────────────────────────
+    function esc(s) { return (s || "").replace(/&/g, "&amp;").replace(/</g, "&lt;").replace(/>/g, "&gt;"); }
+
+    function renderCard(msg) {
+      if (noCards?.parentNode) noCards.remove();
+      const { card_type, data } = msg;
+      const wrap = document.createElement("div");
+
+      if (card_type === "courses") {
+        (data.courses || data.recommendations || []).forEach(c => wrap.appendChild(makeCourseCard(c)));
+      } else if (card_type === "events") {
+        (data.events || []).forEach(e => wrap.appendChild(makeEventCard(e)));
+      } else if (card_type === "booking") {
+        wrap.appendChild(makeBookingCard(data));
+      } else {
+        const card = document.createElement("div");
+        card.className = "card";
+        card.innerHTML = `<div class="card-type-bar info">Info</div>
+      <div class="card-body"><div class="card-detail">${esc(msg.spoken_summary || "")}</div></div>`;
+        wrap.appendChild(card);
+      }
+
+      sidebarScroll.insertBefore(wrap, sidebarScroll.firstChild);
+    }
+
+    function makeCourseCard(c) {
+      const card = document.createElement("div");
+      card.className = "card";
+      const atar = c.atar_cutoff ? `ATAR ${c.atar_cutoff}+` : "No ATAR req.";
+      const match = c.match_pct ? `<span class="tag">${c.match_pct}% match</span>` : "";
+      card.innerHTML = `
+    <div class="card-type-bar course">Course</div>
+    <div class="card-body">
+      <div class="card-title">${esc(c.name)}</div>
+      <div class="tags">
+        <span class="tag">${esc(c.faculty)}</span>
+        <span class="tag">${esc(c.level)}</span>
+        <span class="tag">${esc(c.study_mode)}</span>${match}
+      </div>
+      <div class="card-detail">${esc(c.career_outcomes || "")}</div>
+      <div class="card-fee">$${(c.annual_fee_aud || 0).toLocaleString()}/yr · ${atar} · ${c.duration_years} yrs</div>
+    </div>`;
+      return card;
+    }
+
+    function makeEventCard(e) {
+      const card = document.createElement("div");
+      card.className = "card";
+      const dt = e.start_at ? new Date(e.start_at).toLocaleString("en-AU", { dateStyle: "medium", timeStyle: "short" }) : "";
+      const spotsClass = (e.spots_left || 0) < 15 ? "low" : "open";
+      card.innerHTML = `
+    <div class="card-type-bar event">${esc(e.event_type || "Event")}</div>
+    <div class="card-body">
+      <div class="card-title">${esc(e.title)}</div>
+      <div class="card-detail">${dt}</div>
+      <div class="card-detail"><svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M21 10c0 7-9 13-9 13s-9-6-9-13a9 9 0 0 1 18 0z"></path><circle cx="12" cy="10" r="3"></circle></svg> ${esc(e.location || "")}</div>
+      ${e.spots_left != null ? `<div class="card-spots ${spotsClass}">${e.spots_left} spots left</div>` : ""}
+    </div>`;
+      return card;
+    }
+
+    function makeBookingCard(d) {
+      const card = document.createElement("div");
+      card.className = "card";
+      card.innerHTML = `
+    <div class="card-type-bar booking">Tour Booked</div>
+    <div class="card-body">
+      <div class="booking-ref">${esc(d.booking_id || "")}</div>
+      <div class="card-detail">${esc(d.student_name || "")} · Party of ${d.party_size || 1}<br>
+        ${esc(d.preferred_date || "")} · ${esc(d.email || "")}</div>
+    </div>`;
+      return card;
+    }
+
+    // ── Audio capture (VoZara-style 4096-sample buffer) ───────────────────────────
+    const WORKLET_CODE = `
+class AudioProcessor extends AudioWorkletProcessor {
+  constructor(options) {
+    super();
+    this.bufferSize = options.processorOptions.bufferSize || 4096;
+    this.buffer = new Float32Array(this.bufferSize);
+    this.bufferIndex = 0;
+  }
+  process(inputs) {
+    const input = inputs[0][0];
+    if (!input || !input.length) return true;
+    for (let i = 0; i < input.length; i++) {
+      if (this.bufferIndex < this.bufferSize) {
+        this.buffer[this.bufferIndex++] = Math.max(-0.95, Math.min(0.95, input[i]));
+      }
+    }
+    if (this.bufferIndex >= this.bufferSize) {
+      const pcm = new Int16Array(this.bufferIndex);
+      for (let i = 0; i < this.bufferIndex; i++)
+        pcm[i] = Math.max(-32768, Math.min(32767, Math.round(this.buffer[i] * 32767)));
+      this.port.postMessage(pcm.buffer, [pcm.buffer]);
+      this.buffer = new Float32Array(this.bufferSize);
+      this.bufferIndex = 0;
+    }
+    return true;
+  }
+}
+registerProcessor("uni-audio-processor", AudioProcessor);
+`;
+
+    async function startRecording() {
+      try {
+        mediaStream = await navigator.mediaDevices.getUserMedia({
+          audio: { echoCancellation: true, noiseSuppression: true, autoGainControl: true, channelCount: 1, sampleRate: INPUT_RATE }
+        });
+        audioCtxIn = new AudioContext({ sampleRate: INPUT_RATE, latencyHint: "interactive" });
+
+        const blobUrl = URL.createObjectURL(new Blob([WORKLET_CODE], { type: "application/javascript" }));
+        await audioCtxIn.audioWorklet.addModule(blobUrl);
+        URL.revokeObjectURL(blobUrl);
+
+        const source = audioCtxIn.createMediaStreamSource(mediaStream);
+        workletNode = new AudioWorkletNode(audioCtxIn, "uni-audio-processor", {
+          processorOptions: { bufferSize: 4096 }
+        });
+
+        workletNode.port.onmessage = (e) => {
+          if (!muted && ws?.readyState === WebSocket.OPEN) ws.send(e.data);
+        };
+
+        source.connect(workletNode);
+        recording = true;
+        muted = false;
+        micBtn.classList.add("via-active");
+        micBtn.title = "Tap to stop";
+        muteBtn.disabled = false;
+        muteBtn.classList.remove("via-muted");
+        setUserListening(true);
+      } catch (err) {
+        console.error("Mic error:", err);
+        voiceLabel.textContent = `Mic error: ${err.name}`;
+      }
+    }
+
+    function stopRecording() {
+      if (!recording) return;
+      recording = false;
+      muted = false;
+      workletNode?.disconnect();
+      mediaStream?.getTracks().forEach(t => t.stop());
+      audioCtxIn?.close();
+      workletNode = null; audioCtxIn = null; mediaStream = null;
+      micBtn.classList.remove("via-active");
+      micBtn.title = "Tap to speak";
+      muteBtn.disabled = true;
+      muteBtn.classList.remove("via-muted");
+      setUserListening(false);
+      // Signal end of audio turn to server
+      if (ws?.readyState === WebSocket.OPEN) {
+        ws.send(JSON.stringify({ type: "audio_stop" }));
+      }
+    }
+
+    // ── Audio playback ────────────────────────────────────────────────────────────
+    function getPlaybackCtx() {
+      if (!audioCtxOut || audioCtxOut.state === "closed") {
+        audioCtxOut = new AudioContext({ sampleRate: OUTPUT_RATE });
+        nextPlayTime = 0;
+      }
+      return audioCtxOut;
+    }
+
+    function playPCM(buffer) {
+      const ctx = getPlaybackCtx();
+      const i16 = new Int16Array(buffer);
+      const buf = ctx.createBuffer(1, i16.length, OUTPUT_RATE);
+      const ch = buf.getChannelData(0);
+      for (let i = 0; i < i16.length; i++) ch[i] = i16[i] / 32768;
+      const src = ctx.createBufferSource();
+      src.buffer = buf;
+      src.connect(ctx.destination);
+      const when = Math.max(ctx.currentTime + 0.02, nextPlayTime);
+      src.start(when);
+      nextPlayTime = when + buf.duration;
+    }
+
+    // ── Controls ──────────────────────────────────────────────────────────────────
+    micBtn.addEventListener("click", () => { if (recording) stopRecording(); else startRecording(); });
+
+    muteBtn.addEventListener("click", () => {
+      muted = !muted;
+      muteBtn.classList.toggle("via-muted", muted);
+      muteBtn.title = muted ? "Unmute microphone" : "Mute microphone";
+      if (muted) {
+        voiceLabel.textContent = "Muted";
+        avatarRing.classList.remove("via-listening");
+      } else {
+        voiceLabel.textContent = "Listening…";
+        avatarRing.classList.add("via-listening");
+      }
+    });
+
+    sendBtn.addEventListener("click", sendText);
+    textInput.addEventListener("keydown", (e) => { if (e.key === "Enter" && !e.shiftKey) { e.preventDefault(); sendText(); } });
+
+    function sendText() {
+      const text = textInput.value.trim();
+      if (!text || ws?.readyState !== WebSocket.OPEN) return;
+      appendMsg("user", text);
+      textInput.value = "";
+      ws.send(JSON.stringify({ type: "text", content: text }));
+    }
+
+    function setStatus(cls, label) {
+      statusDot.className = "via-status-dot" + (cls ? " " + cls : "");
+      statusLabel.textContent = label;
+    }
+
+    // ── Boot ──────────────────────────────────────────────────────────────────────
+    connect();
+  </script>
+</body>
+
+</html>
