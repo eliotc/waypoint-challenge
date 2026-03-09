@@ -39,17 +39,39 @@ def unregister_display_callback(session_id: str) -> None:
 
 # ── Embedding helper ──────────────────────────────────────────────────────────
 
-def _embed(text: str) -> list[float]:
+from functools import lru_cache
+
+@lru_cache(maxsize=64)
+def _embed(text: str) -> tuple[float, ...]:
+    """Embed text via Gemini. Results are LRU-cached to avoid repeated API calls."""
     result = _get_genai_client().models.embed_content(
         model="gemini-embedding-001",
         contents=[text],
         config=genai_types.EmbedContentConfig(output_dimensionality=1536),
     )
-    return result.embeddings[0].values
+    return tuple(result.embeddings[0].values)
 
 
-def _emb_str(values: list[float]) -> str:
+def _emb_str(values) -> str:
     return "[" + ",".join(str(v) for v in values) + "]"
+
+
+def _to_json_safe(row: dict) -> dict:
+    """Convert psycopg2 row to JSON-safe Python primitives.
+
+    NUMERIC(3,1) maps to Decimal, which json.dumps can't handle.
+    Also truncates long text fields to keep function responses small.
+    """
+    from decimal import Decimal
+    result = {}
+    for k, v in row.items():
+        if isinstance(v, Decimal):
+            result[k] = float(v)
+        elif isinstance(v, str) and k in ("career_outcomes", "description") and len(v) > 150:
+            result[k] = v[:150] + "…"
+        else:
+            result[k] = v
+    return result
 
 
 # ── DB helper (sync via asyncpg run_until_complete workaround) ────────────────
@@ -108,7 +130,7 @@ def search_courses(query: str, faculty: Optional[str] = None) -> dict:
             cur.execute(sql, (emb, faculty, f"%{faculty}%" if faculty else None, emb))
             rows = cur.fetchall()
         return {
-            "courses": [dict(r) for r in rows],
+            "courses": [_to_json_safe(dict(r)) for r in rows],
             "count": len(rows),
         }
 
@@ -203,9 +225,8 @@ def recommend_courses(
 
     results = []
     for r in rows:
-        d = dict(r)
-        sim = float(d["similarity"])
-        d["match_pct"] = round(sim * 100)
+        d = _to_json_safe(dict(r))
+        d["match_pct"] = round(float(d["similarity"]) * 100)
         results.append(d)
 
     return {
