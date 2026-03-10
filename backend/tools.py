@@ -134,10 +134,16 @@ def search_courses(query: str, faculty: Optional[str] = None) -> dict:
             cur.execute(sql, (emb, faculty, f"%{faculty}%" if faculty else None, emb))
             rows = cur.fetchall()
             log.debug("SQL executed, found %d rows", len(rows))
-        return {
-            "courses": [_to_json_safe(dict(r)) for r in rows],
-            "count": len(rows),
-        }
+        courses = [_to_json_safe(dict(r)) for r in rows]
+        data = {"courses": courses, "count": len(rows)}
+        
+        # Directly emit card to ensure delivery
+        if _display_callbacks:
+            payload = {"type": "card", "card_type": "courses", "data": data, "spoken_summary": "Here are some matching courses."}
+            for loop, callback in _display_callbacks.values():
+                asyncio.run_coroutine_threadsafe(callback(payload), loop)
+                
+        return data
 
 
 # ── Tool 2: search_events ────────────────────────────────────────────────────
@@ -185,7 +191,15 @@ def search_events(event_type: Optional[str] = None, date_range: Optional[str] = 
         d["end_at"]   = d["end_at"].isoformat()   if d["end_at"]   else None
         events.append(d)
 
-    return {"events": events, "count": len(events)}
+    data = {"events": events, "count": len(events)}
+    
+    # Directly emit card to ensure delivery
+    if _display_callbacks:
+        payload = {"type": "card", "card_type": "events", "data": data, "spoken_summary": "Here are some upcoming events."}
+        for loop, callback in _display_callbacks.values():
+            asyncio.run_coroutine_threadsafe(callback(payload), loop)
+            
+    return data
 
 
 # ── Tool 3: recommend_courses ─────────────────────────────────────────────────
@@ -234,11 +248,19 @@ def recommend_courses(
         d["match_pct"] = round(float(d["similarity"]) * 100)
         results.append(d)
 
-    return {
+    data = {
         "recommendations": results,
         "count": len(results),
         "query_summary": query,
     }
+    
+    # Directly emit card
+    if _display_callbacks:
+        payload = {"type": "card", "card_type": "courses", "data": {"courses": results, "count": len(results)}, "spoken_summary": "I recommend these courses based on your interests."}
+        for loop, callback in _display_callbacks.values():
+            asyncio.run_coroutine_threadsafe(callback(payload), loop)
+            
+    return data
 
 
 # ── Tool 4: book_campus_tour ──────────────────────────────────────────────────
@@ -273,7 +295,7 @@ def book_campus_tour(
             cur.execute(sql, (student_name, email, tour_date, party_size))
             row = dict(cur.fetchone())
 
-    return {
+    data = {
         "success": True,
         "booking_id": f"GT-{row['id']:05d}",
         "student_name": student_name,
@@ -285,6 +307,13 @@ def book_campus_tour(
             f"A confirmation will be sent to {email}."
         ),
     }
+
+    if _display_callbacks:
+        payload = {"type": "card", "card_type": "booking", "data": data, "spoken_summary": "Your tour is booked!"}
+        for loop, callback in _display_callbacks.values():
+            asyncio.run_coroutine_threadsafe(callback(payload), loop)
+            
+    return data
 
 
 # ── Tool 5: display_data ──────────────────────────────────────────────────────

@@ -905,9 +905,14 @@
       }
       
       if (final) {
-        userBuffer = text; // Final is cumulative
+        userBuffer = text; 
       } else {
-        userBuffer += text; // Partials are deltas in ADK
+        // Smart spacing for deltas: if this doesn't start with space and last char isn't space, add one
+        if (userBuffer && !text.startsWith(" ") && !userBuffer.endsWith(" ")) {
+            userBuffer += " " + text;
+        } else {
+            userBuffer += text;
+        }
       }
       
       userMsgEl.querySelector(".via-text").textContent = userBuffer;
@@ -938,9 +943,14 @@
       }
       
       if (final) {
-        agentBuffer = text; // Final is cumulative
+        agentBuffer = text;
       } else {
-        agentBuffer += text; // Partials are deltas in ADK
+        // Smart spacing for deltas
+        if (agentBuffer && !text.startsWith(" ") && !agentBuffer.endsWith(" ")) {
+            agentBuffer += " " + text;
+        } else {
+            agentBuffer += text;
+        }
       }
       
       const bubble = agentMsgEl.querySelector(".via-msg-bubble");
@@ -1125,7 +1135,7 @@ registerProcessor("uni-audio-processor", AudioProcessor);
 
         const source = audioCtxIn.createMediaStreamSource(mediaStream);
         workletNode = new AudioWorkletNode(audioCtxIn, "uni-audio-processor", {
-          processorOptions: { bufferSize: 4096 }
+          processorOptions: { bufferSize: 2048 } // Reduced from 4096 for lower latency
         });
 
         workletNode.port.onmessage = (e) => {

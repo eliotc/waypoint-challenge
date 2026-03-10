@@ -101,7 +101,11 @@ STATIC_DIR = pathlib.Path(__file__).parent.parent / "frontend"
 log        = logging.getLogger(__name__)
 
 HIDDEN_GREETING_PROMPT = "(System: The student has just arrived. Please greet them warmly as Clara, the Kingsford University course counsellor. Ask how you can help them explore courses or events today. Keep it brief and friendly.)"
-logging.basicConfig(level=logging.INFO, format="%(levelname)s  %(message)s")
+logging.basicConfig(
+    level=logging.INFO, 
+    format="%(asctime)s.%(msecs)03d %(levelname)s  %(message)s",
+    datefmt="%H:%M:%S"
+)
 
 # Global singletons for session management
 session_service = InMemorySessionService()
@@ -170,6 +174,14 @@ async def websocket_endpoint(websocket: WebSocket, client_id: str):
         else:
             log.info("ADK session resumed: %s (history: %d events)", 
                      session.id, len(session.events))
+            # Strip audio from model responses to prevent 1007 on reconnect
+            # Native Audio models do not accept audio in context history.
+            for event in session.events:
+                if event.content and event.content.parts:
+                    for part in event.content.parts:
+                        if part.inline_data:
+                            part.inline_data = None
+
     except Exception as e:
         # Fallback to fresh session if retrieval fails
         session = await session_service.create_session(
@@ -223,10 +235,25 @@ async def websocket_endpoint(websocket: WebSocket, client_id: str):
                 live_request_queue.close()
 
         async def run_live_loop():
-            """Process ADK events with a 3-attempt retry loop for transient errors."""
-            max_attempts = 3
+            """Process ADK events with a retry loop for transient errors and session limits."""
+            max_attempts = 10 # Increase for long-running idle recovery
             for attempt in range(1, max_attempts + 1):
                 try:
+                    if attempt > 1:
+                        log.info("Retry attempt %d/%d after session interruption...", attempt, max_attempts)
+                        await asyncio.sleep(2) # Small backoff to prevent tight loops
+                        
+                        # Drain the queue to prevent 1007 invalid payload from stale audio floods
+                        # that accumulated while the connection was down.
+                        cleared = 0
+                        while not live_request_queue._queue.empty():
+                            try:
+                                live_request_queue._queue.get_nowait()
+                                cleared += 1
+                            except asyncio.QueueEmpty:
+                                break
+                        log.info("Drained %d stale items from live_request_queue before retry.", cleared)
+                    
                     async for event in runner.run_live(
                         user_id=client_id,
                         session_id=session.id,
