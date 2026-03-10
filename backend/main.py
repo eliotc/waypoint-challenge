@@ -62,6 +62,8 @@ async def _patched_send_content(self, content: types.Content):
         # which can cause the native audio model to crash with 1011.
         function_responses = [p.function_response for p in content.parts if p.function_response]
         if function_responses:
+            # We use an ID mapping to ensure the tool response IDs strictly match 
+            # the most recent function calls from the model.
             payload = json.dumps({
                 "tool_response": {
                     "functionResponses": [
@@ -70,9 +72,15 @@ async def _patched_send_content(self, content: types.Content):
                     ]
                 }
             })
+            log.debug("Tool response payload (%d bytes): %s", len(payload), payload[:300])
             await self._gemini_session._ws.send(payload)
     else:
-        await self._gemini_session.send_client_content(turns=[content], turn_complete=True)
+        await self._gemini_session.send(
+            input=types.LiveClientContent(
+                turns=[content],
+                turn_complete=True,
+            )
+        )
 
 async def _patched_send_realtime(self, input):
     if isinstance(input, types.Blob):
@@ -90,8 +98,14 @@ GeminiLlmConnection.send_realtime = _patched_send_realtime
 # ── Config ────────────────────────────────────────────────────────────────────
 APP_NAME   = "waypoint"
 STATIC_DIR = pathlib.Path(__file__).parent.parent / "frontend"
-log        = logging.getLogger("waypoint")
+log        = logging.getLogger(__name__)
+
+HIDDEN_GREETING_PROMPT = "(System: The student has just arrived. Please greet them warmly as Clara, the Kingsford University course counsellor. Ask how you can help them explore courses or events today. Keep it brief and friendly.)"
 logging.basicConfig(level=logging.INFO, format="%(levelname)s  %(message)s")
+
+# Global singletons for session management
+session_service = InMemorySessionService()
+runner = Runner(agent=clara, app_name=APP_NAME, session_service=session_service)
 
 # ── App lifecycle ─────────────────────────────────────────────────────────────
 @asynccontextmanager
@@ -138,16 +152,31 @@ async def websocket_endpoint(websocket: WebSocket, client_id: str):
 
     register_display_callback(client_id, loop, send_card)
 
-    # Per-connection session service + runner
-    # (module-level singletons conflict with FastAPI's async event loop)
-    session_service = InMemorySessionService()
-    runner = Runner(agent=clara, app_name=APP_NAME, session_service=session_service)
-
-    session = await session_service.create_session(
-        app_name=APP_NAME,
-        user_id=client_id,
-    )
-    log.info("ADK session created: %s", session.id)
+    # Use a consistent session per client_id to preserve history
+    # if the WebSocket reconnects.
+    try:
+        session = await session_service.get_session(
+            app_name=APP_NAME,
+            user_id=client_id,
+            session_id=client_id # Use client_id as session_id for persistence
+        )
+        if not session:
+            session = await session_service.create_session(
+                app_name=APP_NAME,
+                user_id=client_id,
+                session_id=client_id
+            )
+            log.info("ADK session created: %s", session.id)
+        else:
+            log.info("ADK session resumed: %s (history: %d events)", 
+                     session.id, len(session.events))
+    except Exception as e:
+        # Fallback to fresh session if retrieval fails
+        session = await session_service.create_session(
+            app_name=APP_NAME,
+            user_id=client_id,
+        )
+        log.warning("ADK session fresh start (retrieval failed: %s): %s", e, session.id)
 
     live_request_queue = LiveRequestQueue()
 
@@ -162,6 +191,7 @@ async def websocket_endpoint(websocket: WebSocket, client_id: str):
         ),
         input_audio_transcription=types.AudioTranscriptionConfig(),
         output_audio_transcription=types.AudioTranscriptionConfig(),
+        context_window_compression=None,
     )
 
     try:
@@ -193,73 +223,105 @@ async def websocket_endpoint(websocket: WebSocket, client_id: str):
                 live_request_queue.close()
 
         async def run_live_loop():
-            """Process ADK events from a single run_live session."""
-            async for event in runner.run_live(
-                user_id=client_id,
-                session_id=session.id,
-                live_request_queue=live_request_queue,
-                run_config=run_config,
-            ):
-                in_text = getattr(getattr(event, "input_transcription", None), "text", None)
-                out_text = getattr(getattr(event, "output_transcription", None), "text", None)
-                is_turn_complete = getattr(event, "turn_complete", False)
-                if in_text and not getattr(event, "partial", True):
-                    log.info("User: %s", in_text)
-                if out_text and not getattr(event, "partial", True):
-                    log.info("Clara: %s", out_text)
-                if is_turn_complete:
-                    log.info("Turn complete")
-                # Audio output
-                if event.content and event.content.parts:
-                    for part in event.content.parts:
-                        if part.inline_data and part.inline_data.mime_type.startswith("audio/"):
-                            await websocket.send_bytes(part.inline_data.data)
+            """Process ADK events with a 3-attempt retry loop for transient errors."""
+            max_attempts = 3
+            for attempt in range(1, max_attempts + 1):
+                try:
+                    async for event in runner.run_live(
+                        user_id=client_id,
+                        session_id=session.id,
+                        live_request_queue=live_request_queue,
+                        run_config=run_config,
+                    ):
+                        in_text = getattr(getattr(event, "input_transcription", None), "text", None)
+                        out_text = getattr(getattr(event, "output_transcription", None), "text", None)
+                        is_turn_complete = getattr(event, "turn_complete", False)
+                        is_partial = getattr(event, "partial", True)
 
-                # Transcriptions
-                if event.output_transcription:
-                    text = (getattr(event.output_transcription, "text", "") or "").strip()
-                    if text and not text.startswith("**"):
-                        await websocket.send_text(json.dumps({
-                            "type": "transcript", "role": "agent", "text": text,
-                        }))
-                if event.input_transcription:
-                    text = (getattr(event.input_transcription, "text", "") or "").strip()
-                    if text:
-                        is_final = (event.partial is False)
-                        await websocket.send_text(json.dumps({
-                            "type": "transcript", "role": "user", "text": text,
-                            "final": is_final,
-                        }))
+                        # Logging
+                        if in_text:
+                            if is_partial:
+                                log.debug("User (partial): %s", in_text)
+                            else:
+                                log.info("User: %s", in_text)
+                        
+                        if out_text:
+                            if is_partial:
+                                log.debug("Clara (partial): %s", out_text)
+                            else:
+                                log.info("Clara: %s", out_text)
+                        
+                        if is_turn_complete:
+                            log.info("Turn complete")
 
-                # Turn complete
-                if event.turn_complete:
-                    await websocket.send_text(json.dumps({"type": "turn_complete"}))
+                        # Audio output
+                        if event.content and event.content.parts:
+                            for part in event.content.parts:
+                                if part.inline_data and part.inline_data.mime_type.startswith("audio/"):
+                                    await websocket.send_bytes(part.inline_data.data)
+
+                        # Transcriptions — role: agent
+                        if event.output_transcription:
+                            text = (getattr(event.output_transcription, "text", "") or "").strip()
+                            if text and not text.startswith("**"):
+                                await websocket.send_text(json.dumps({
+                                    "type": "transcript", 
+                                    "role": "agent", 
+                                    "text": text,
+                                    "final": not is_partial
+                                }))
+
+                        # Transcriptions — role: user
+                        if event.input_transcription:
+                            text = (getattr(event.input_transcription, "text", "") or "").strip()
+                            if text:
+                                # Filter hidden prompt (handles both deltas and cumulative)
+                                if text in HIDDEN_GREETING_PROMPT:
+                                    log.debug("Filtered hidden greeting prompt fragment: %s", text)
+                                else:
+                                    await websocket.send_text(json.dumps({
+                                        "type": "transcript", 
+                                        "role": "user", 
+                                        "text": text,
+                                        "final": not is_partial,
+                                    }))
+
+                        # Turn complete
+                        if event.turn_complete:
+                            await websocket.send_text(json.dumps({"type": "turn_complete"}))
+                    
+                    # If we finish successfully, break the retry loop
+                    break
+
+                except Exception as e:
+                    err_msg = str(e)
+                    if ("1011" in err_msg or "1008" in err_msg) and attempt < max_attempts:
+                        log.warning("Attempt %d failed (error %s). Retrying...", attempt, err_msg)
+                        await asyncio.sleep(0.5 * attempt) # Basic backoff
+                        continue
+                    raise # Re-raise if out of attempts or different error
 
         async def send_to_browser():
-            log.info("Starting ADK run_live for session %s", session.id)
-            MAX_RETRIES = 3
-            for attempt in range(MAX_RETRIES):
-                try:
-                    await run_live_loop()
-                    break  # clean exit
-                except Exception as e:
-                    err_str = str(e)
-                    if "1000" in err_str:
-                        log.info("Gemini Live connection closed normally.")
-                        break
-                    elif ("1011" in err_str or "1008" in err_str) and attempt < MAX_RETRIES - 1:
-                        log.warning("Gemini session dropped (%s), reconnecting (attempt %d/%d)…",
-                                    err_str[:40],
-                                    attempt + 2, MAX_RETRIES)
-                        await asyncio.sleep(0.5)
-                        continue
-                    else:
-                        log.error("send_to_browser error: %s", e)
-                        try:
-                            await websocket.send_text(json.dumps({"type": "error", "message": str(e)}))
-                        except Exception:
-                            pass
-                        break
+            log.info("Starting ADK run_live for session %s (history: %d)", 
+                     session.id, len(session.events))
+            try:
+                # Initial hidden greeting trigger — ONLY on fresh sessions
+                if not session.events:
+                    log.info("Fresh session: sending proactive greeting trigger")
+                    live_request_queue.send_content(
+                        types.Content(parts=[types.Part(text=HIDDEN_GREETING_PROMPT)])
+                    )
+                await run_live_loop()
+            except Exception as e:
+                err_str = str(e)
+                if "1000" in err_str:
+                    log.info("Gemini Live connection closed normally.")
+                else:
+                    log.error("send_to_browser error: %s", e)
+                    try:
+                        await websocket.send_text(json.dumps({"type": "error", "message": str(e)}))
+                    except Exception:
+                        pass
 
         # Use wait FIRST_COMPLETED so that if the model disconnects (send_to_browser ends),
         # the browser task is cancelled and the WebSocket closes, preventing "zombie" UI states.

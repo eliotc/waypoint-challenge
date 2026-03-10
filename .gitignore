@@ -1,10 +1,15 @@
 .env
+.claude
 .venv/
 __pycache__/
 *.pyc
 *.pyo
 .DS_Store
 
+
 # Internal Docs & AI Config
 CLAUDE.md
 HACKATHON_PLAN.md
+
+# Agent memory (local context, not committed)
+.memory/

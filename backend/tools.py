@@ -3,6 +3,7 @@ Waypoint ADK tools.
 All tools must be synchronous (ADK calls them in a thread pool).
 """
 import asyncio
+import logging
 import os
 from datetime import date
 from typing import Any, Callable, Coroutine, Optional
@@ -11,6 +12,7 @@ import google.genai as genai
 import google.genai.types as genai_types
 
 _genai_client: genai.Client | None = None
+log = logging.getLogger(__name__)
 
 def _get_genai_client() -> genai.Client:
     global _genai_client
@@ -114,7 +116,9 @@ def search_courses(query: str, faculty: Optional[str] = None) -> dict:
     'Arts & Humanities', 'Health Sciences').
     Returns up to 5 matching courses with key details.
     """
+    log.debug("search_courses query='%s' faculty=%s", query, faculty)
     emb = _emb_str(_embed(query))
+    log.debug("Embedding generated, executing SQL...")
     sql = """
         SELECT code, name, faculty, level, study_mode,
                duration_years, atar_cutoff, annual_fee_aud,
@@ -129,6 +133,7 @@ def search_courses(query: str, faculty: Optional[str] = None) -> dict:
         with conn.cursor(cursor_factory=psycopg2.extras.RealDictCursor) as cur:
             cur.execute(sql, (emb, faculty, f"%{faculty}%" if faculty else None, emb))
             rows = cur.fetchall()
+            log.debug("SQL executed, found %d rows", len(rows))
         return {
             "courses": [_to_json_safe(dict(r)) for r in rows],
             "count": len(rows),

@@ -176,6 +176,29 @@
       box-shadow: 0 0 0 3px rgba(13, 148, 136, 0.2);
     }
 
+    /* Disconnect / End Session */
+    .via-disconnect {
+      padding: 6px 12px;
+      font-size: 11px;
+      font-weight: 600;
+      color: #ef4444;
+      background: #fee2e2;
+      border: 1px solid #fca5a5;
+      border-radius: 6px;
+      cursor: pointer;
+      transition: all 0.2s ease;
+      margin-left: 10px;
+    }
+
+    .via-disconnect:hover {
+      background: #fecaca;
+      transform: translateY(-1px);
+    }
+
+    .via-disconnect:active {
+      transform: translateY(0);
+    }
+
     /* Voice bar */
     .via-voice-bar {
       display: flex;
@@ -334,8 +357,39 @@
       border-bottom-right-radius: 6px;
     }
 
+    .via-text {
+      display: inline;
+    }
+
     .via-msg-bubble.via-typing {
-      opacity: 0.7;
+      opacity: 0.85;
+      position: relative;
+    }
+
+    /* Thinking dots animation */
+    .via-thinking-dots {
+      display: inline-flex;
+      align-items: center;
+      gap: 3px;
+      margin-left: 6px;
+      vertical-align: middle;
+    }
+
+    .via-thinking-dots span {
+      width: 4px;
+      height: 4px;
+      background: currentColor;
+      border-radius: 50%;
+      opacity: 0.4;
+      animation: viaThinking 1.4s infinite both;
+    }
+
+    .via-thinking-dots span:nth-child(2) { animation-delay: 0.2s; }
+    .via-thinking-dots span:nth-child(3) { animation-delay: 0.4s; }
+
+    @keyframes viaThinkingDot {
+      0%, 80%, 100% { transform: scale(0.6); opacity: 0.4; }
+      40% { transform: scale(1.1); opacity: 0.9; }
     }
 
     /* Input bar */
@@ -373,7 +427,12 @@
       background: var(--accent-teal);
       color: white;
       border-color: var(--accent-teal);
-      animation: viaMicPulse 1.5s ease-in-out infinite;
+    }
+
+    .via-mode-btn.via-muted {
+      background: #fee2e2;
+      color: #ef4444;
+      border-color: #fca5a5;
     }
 
     .via-mode-btn:disabled {
@@ -381,49 +440,7 @@
       cursor: not-allowed;
     }
 
-    @keyframes viaMicPulse {
-
-      0%,
-      100% {
-        box-shadow: 0 0 0 0 rgba(13, 148, 136, 0.4);
-      }
-
-      50% {
-        box-shadow: 0 0 0 6px rgba(13, 148, 136, 0);
-      }
-    }
-
-    .via-mute-bar-btn {
-      margin-left: auto;
-      flex-shrink: 0;
-      width: 28px;
-      height: 28px;
-      border-radius: 50%;
-      border: 1px solid rgba(13, 148, 136, 0.3);
-      background: transparent;
-      color: var(--accent-teal);
-      cursor: pointer;
-      display: flex;
-      align-items: center;
-      justify-content: center;
-      transition: all 0.2s ease;
-    }
-
-    .via-mute-bar-btn:hover:not(:disabled) {
-      background: rgba(13, 148, 136, 0.1);
-    }
-
-    .via-mute-bar-btn.via-muted {
-      background: #fee2e2;
-      color: #ef4444;
-      border-color: #fca5a5;
-    }
-
-    .via-mute-bar-btn.via-muted:hover:not(:disabled) {
-      background: #fecaca;
-    }
-
-    .via-mute-bar-btn:disabled {
+    .via-mode-btn:disabled {
       opacity: 0.35;
       cursor: not-allowed;
     }
@@ -704,6 +721,7 @@
         <div class="via-status">
           <div class="via-status-dot" id="statusDot"></div>
           <span id="statusLabel">Connecting…</span>
+          <button class="via-disconnect" id="disconnectBtn" style="display:none" title="End session and close connection">End Session</button>
         </div>
       </div>
 
@@ -712,13 +730,6 @@
           <span></span><span></span><span></span><span></span><span></span><span></span><span></span>
         </div>
         <span class="via-voice-label" id="viaVoiceLabel">Voice active — speak or type</span>
-        <button class="via-mute-bar-btn" id="muteBtn" disabled title="Mute microphone">
-          <svg width="16" height="16" viewBox="0 0 24 24" fill="currentColor">
-            <path d="M12 14c1.66 0 3-1.34 3-3V5c0-1.66-1.34-3-3-3S9 3.34 9 5v6c0 1.66 1.34 3 3 3z" />
-            <path
-              d="M17 11c0 2.76-2.24 5-5 5s-5-2.24-5-5H5c0 3.53 2.61 6.43 6 6.92V21h2v-3.08c3.39-.49 6-3.39 6-6.92h-2z" />
-          </svg>
-        </button>
       </div>
 
       <div class="via-messages" id="viaMessages">
@@ -728,11 +739,10 @@
       </div>
 
       <div class="via-input-bar">
-        <button class="via-mode-btn" id="micBtn" disabled title="Tap to speak">
-          <svg width="18" height="18" viewBox="0 0 24 24" fill="currentColor">
+        <button class="via-mode-btn" id="voiceBtn" disabled title="Enable microphone">
+          <svg width="20" height="20" viewBox="0 0 24 24" fill="currentColor">
             <path d="M12 14c1.66 0 3-1.34 3-3V5c0-1.66-1.34-3-3-3S9 3.34 9 5v6c0 1.66 1.34 3 3 3z" />
-            <path
-              d="M17 11c0 2.76-2.24 5-5 5s-5-2.24-5-5H5c0 3.53 2.61 6.43 6 6.92V21h2v-3.08c3.39-.49 6-3.39 6-6.92h-2z" />
+            <path d="M17 11c0 2.76-2.24 5-5 5s-5-2.24-5-5H5c0 3.53 2.61 6.43 6 6.92V21h2v-3.08c3.39-.49 6-3.39 6-6.92h-2z" />
           </svg>
         </button>
         <input class="via-input" id="textInput" type="text" placeholder="Type a message…" disabled autocomplete="off" />
@@ -771,15 +781,14 @@
     const OUTPUT_RATE = 24000;
 
     // ── State ─────────────────────────────────────────────────────────────────────
-    let ws = null, recording = false, muted = false;
+    let ws = null, recording = false, muted = false, userInitiatedDisconnect = false;
     let audioCtxIn = null, audioCtxOut = null, workletNode = null, mediaStream = null;
     let nextPlayTime = 0;
     let agentMsgEl = null, agentBuffer = "", agentSpeaking = false;
     let userMsgEl = null, userBuffer = "";
 
     // ── DOM ───────────────────────────────────────────────────────────────────────
-    const micBtn = document.getElementById("micBtn");
-    const muteBtn = document.getElementById("muteBtn");
+    const voiceBtn = document.getElementById("voiceBtn");
     const textInput = document.getElementById("textInput");
     const sendBtn = document.getElementById("sendBtn");
     const messages = document.getElementById("viaMessages");
@@ -788,6 +797,7 @@
     const noCards = document.getElementById("noCards");
     const statusDot = document.getElementById("statusDot");
     const statusLabel = document.getElementById("statusLabel");
+    const disconnectBtn = document.getElementById("disconnectBtn");
     const avatar = document.getElementById("viaAvatar");
     const avatarRing = document.getElementById("viaAvatarRing");
     const voiceBar = document.getElementById("viaVoiceBar");
@@ -801,20 +811,28 @@
 
       ws.onopen = () => {
         setStatus("connected", "Connected");
-        micBtn.disabled = false;
+        voiceBtn.disabled = false;
         textInput.disabled = false;
         sendBtn.disabled = false;
-        // voice bar stays hidden until user speaks or Clara responds
-        emptyMsg.querySelector(".via-msg-bubble").textContent =
-          "Hi! I'm Clara, your Kingsford University course counsellor on Waypoint. Speak or type to get started.";
+        disconnectBtn.style.display = "block";
+        
+        // Auto-start recording if possible
+        startRecording().catch(err => {
+          console.warn("Auto-start mic blocked by browser policy, waiting for user interaction.");
+          appendMsg("ai", "I'm ready! Click the microphone button in the input bar to enable voice.", true);
+        });
       };
 
-      ws.onclose = () => {
-        setStatus("", "Reconnecting…");
-        micBtn.disabled = true; textInput.disabled = true; sendBtn.disabled = true;
+      ws.onclose = (ev) => {
+        const wasClean = ev.wasClean || userInitiatedDisconnect;
+        setStatus("", wasClean ? "Session Ended" : "Reconnecting…");
+        voiceBtn.disabled = true; textInput.disabled = true; sendBtn.disabled = true;
+        disconnectBtn.style.display = "none";
         voiceBar.classList.remove("via-active");
         stopRecording();
-        setTimeout(connect, 3000);
+        if (!wasClean) {
+          setTimeout(connect, 3000);
+        }
       };
 
       ws.onerror = () => ws.close();
@@ -833,14 +851,9 @@
         case "transcript":
           if (msg.text && !msg.text.trim().startsWith("**")) {
             if (msg.role === "agent") {
-              appendOrUpdateAgent(msg.text);
-            } else if (msg.final) {
-              // Final complete transcript — replace any fragmented partials
-              userBuffer = msg.text.trim();
-              if (userMsgEl) userMsgEl.querySelector(".via-msg-bubble").textContent = userBuffer;
-              else appendOrUpdateUser(msg.text);
+              appendOrUpdateAgent(msg.text, msg.final);
             } else {
-              appendOrUpdateUser(msg.text);
+              appendOrUpdateUser(msg.text, msg.final);
             }
           }
           break;
@@ -878,18 +891,27 @@
       return wrap;
     }
 
-    function appendOrUpdateUser(text) {
-      userBuffer += (userBuffer && !userBuffer.endsWith(" ") ? " " : "") + text;
+    function appendOrUpdateUser(text, final = false) {
       if (!userMsgEl) {
         removeEmptyMsg();
         userMsgEl = document.createElement("div");
         userMsgEl.className = "via-msg via-msg-user";
         const bubble = document.createElement("div");
         bubble.className = "via-msg-bubble via-typing";
+        bubble.innerHTML = `<span class="via-text"></span>`;
         userMsgEl.appendChild(bubble);
         messages.appendChild(userMsgEl);
+        userBuffer = ""; // Reset local buffer for new bubble
       }
-      userMsgEl.querySelector(".via-msg-bubble").textContent = userBuffer;
+      
+      if (final) {
+        userBuffer = text; // Final is cumulative
+      } else {
+        userBuffer += text; // Partials are deltas in ADK
+      }
+      
+      userMsgEl.querySelector(".via-text").textContent = userBuffer;
+      if (final) flushUser();
       messages.scrollTop = messages.scrollHeight;
     }
 
@@ -901,8 +923,7 @@
       userBuffer = "";
     }
 
-    function appendOrUpdateAgent(text) {
-      agentBuffer = text;  // out_tx arrives as one final complete event — replace, don't append
+    function appendOrUpdateAgent(text, final = false) {
       setAgentSpeaking(true);
       if (!agentMsgEl) {
         removeEmptyMsg();
@@ -910,10 +931,34 @@
         agentMsgEl.className = "via-msg via-msg-ai";
         const bubble = document.createElement("div");
         bubble.className = "via-msg-bubble via-typing";
+        bubble.innerHTML = `<span class="via-text"></span>`;
         agentMsgEl.appendChild(bubble);
         messages.appendChild(agentMsgEl);
+        agentBuffer = ""; // Reset local buffer for new bubble
       }
-      agentMsgEl.querySelector(".via-msg-bubble").textContent = agentBuffer;
+      
+      if (final) {
+        agentBuffer = text; // Final is cumulative
+      } else {
+        agentBuffer += text; // Partials are deltas in ADK
+      }
+      
+      const bubble = agentMsgEl.querySelector(".via-msg-bubble");
+      bubble.querySelector(".via-text").textContent = agentBuffer;
+      
+      if (!final) {
+        if (!bubble.querySelector(".via-thinking-dots")) {
+          const dots = document.createElement("span");
+          dots.className = "via-thinking-dots";
+          dots.innerHTML = "<span></span><span></span><span></span>";
+          bubble.appendChild(dots);
+        }
+      } else {
+        const dots = bubble.querySelector(".via-thinking-dots");
+        if (dots) dots.remove();
+        flushAgent();
+      }
+      
       messages.scrollTop = messages.scrollHeight;
     }
 
@@ -935,11 +980,9 @@
         avatarRing.classList.remove("via-listening");
       } else {
         avatar.classList.remove("via-speaking");
-        wave.classList.remove("via-wave-active");
-        if (recording) {
+        if (recording && !muted) {
           voiceLabel.textContent = "Listening…";
           avatarRing.classList.add("via-listening");
-        } else {
           voiceBar.classList.remove("via-active");
         }
       }
@@ -1066,6 +1109,10 @@ registerProcessor("uni-audio-processor", AudioProcessor);
 `;
 
     async function startRecording() {
+      if (recording) {
+        toggleMute();
+        return;
+      }
       try {
         mediaStream = await navigator.mediaDevices.getUserMedia({
           audio: { echoCancellation: true, noiseSuppression: true, autoGainControl: true, channelCount: 1, sampleRate: INPUT_RATE }
@@ -1088,10 +1135,9 @@ registerProcessor("uni-audio-processor", AudioProcessor);
         source.connect(workletNode);
         recording = true;
         muted = false;
-        micBtn.classList.add("via-active");
-        micBtn.title = "Tap to stop";
-        muteBtn.disabled = false;
-        muteBtn.classList.remove("via-muted");
+        voiceBtn.classList.add("via-active");
+        voiceBtn.classList.remove("via-muted");
+        voiceBtn.title = "Mute microphone";
         setUserListening(true);
       } catch (err) {
         console.error("Mic error:", err);
@@ -1107,14 +1153,33 @@ registerProcessor("uni-audio-processor", AudioProcessor);
       mediaStream?.getTracks().forEach(t => t.stop());
       audioCtxIn?.close();
       workletNode = null; audioCtxIn = null; mediaStream = null;
-      micBtn.classList.remove("via-active");
-      micBtn.title = "Tap to speak";
-      muteBtn.disabled = true;
-      muteBtn.classList.remove("via-muted");
+      voiceBtn.classList.remove("via-active", "via-muted");
+      voiceBtn.title = "Enable microphone";
       setUserListening(false);
+      // Ensure UI reflects inactive state if not speaking
+      if (!agentSpeaking) {
+        voiceBar.classList.remove("via-active");
+        voiceLabel.textContent = "Voice active — speak or type";
+      }
       // Signal end of audio turn to server
       if (ws?.readyState === WebSocket.OPEN) {
         ws.send(JSON.stringify({ type: "audio_stop" }));
+      }
+    }
+
+    function toggleMute() {
+      if (!recording) return;
+      muted = !muted;
+      voiceBtn.classList.toggle("via-muted", muted);
+      voiceBtn.title = muted ? "Unmute microphone" : "Mute microphone";
+      if (muted) {
+        voiceLabel.textContent = "Muted";
+        avatarRing.classList.remove("via-listening");
+        wave.classList.remove("via-wave-active");
+      } else {
+        voiceLabel.textContent = "Listening…";
+        avatarRing.classList.add("via-listening");
+        wave.classList.add("via-wave-active");
       }
     }
 
@@ -1142,19 +1207,15 @@ registerProcessor("uni-audio-processor", AudioProcessor);
     }
 
     // ── Controls ──────────────────────────────────────────────────────────────────
-    micBtn.addEventListener("click", () => { if (recording) stopRecording(); else startRecording(); });
+    voiceBtn.addEventListener("click", () => {
+      if (!recording) startRecording();
+      else toggleMute();
+    });
 
-    muteBtn.addEventListener("click", () => {
-      muted = !muted;
-      muteBtn.classList.toggle("via-muted", muted);
-      muteBtn.title = muted ? "Unmute microphone" : "Mute microphone";
-      if (muted) {
-        voiceLabel.textContent = "Muted";
-        avatarRing.classList.remove("via-listening");
-      } else {
-        voiceLabel.textContent = "Listening…";
-        avatarRing.classList.add("via-listening");
-      }
+    disconnectBtn.addEventListener("click", () => {
+      userInitiatedDisconnect = true;
+      ws?.close();
+      stopRecording();
     });
 
     sendBtn.addEventListener("click", sendText);
