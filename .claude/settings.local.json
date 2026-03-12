@@ -10,7 +10,8 @@
       "Bash(.venv/bin/pip install:*)",
       "WebFetch(domain:google.github.io)",
       "Bash(python:*)",
-      "WebFetch(domain:ai.google.dev)"
+      "WebFetch(domain:ai.google.dev)",
+      "Bash(grep -E \"\\\\.py$\")"
     ]
   }
 }

@@ -20,6 +20,7 @@ Browser audio protocol:
 import asyncio
 import json
 import logging
+import time
 import os
 import pathlib
 import re
@@ -206,6 +207,10 @@ async def websocket_endpoint(websocket: WebSocket, client_id: str):
         log.warning("ADK session fresh start (retrieval failed: %s): %s", e, session.id)
 
     live_request_queue = LiveRequestQueue()
+    first_input_at = None
+    agent_tx_buf = ""
+    user_tx_buf = ""
+    turn_start_at = None
 
     run_config = RunConfig(
         streaming_mode=StreamingMode.BIDI,
@@ -247,10 +252,11 @@ async def websocket_endpoint(websocket: WebSocket, client_id: str):
             except (WebSocketDisconnect, RuntimeError):
                 pass
             finally:
-                live_request_queue.close()
-
+                first_input_at = None
+        
         async def run_live_loop():
             """Process ADK events with a retry loop for transient errors and session limits."""
+            nonlocal agent_tx_buf, user_tx_buf, first_input_at, turn_start_at
             nonlocal session
             max_attempts = 10
             consecutive_1007 = 0
@@ -289,6 +295,11 @@ async def websocket_endpoint(websocket: WebSocket, client_id: str):
                     user_tx_buf = ""
                     agent_tx_buf = ""
 
+                    if not first_input_at:
+                        first_input_at = time.time()
+                        turn_start_at = time.time()
+                        log.info("--- TURN START ---")
+
                     async for event in runner.run_live(
                         user_id=client_id,
                         session_id=session.id,
@@ -317,8 +328,9 @@ async def websocket_endpoint(websocket: WebSocket, client_id: str):
                                     agent_tx_buf = ""
                                 else:
                                     agent_tx_buf += chunk
-                                    display_text = agent_tx_buf.strip()
-                                log.info("Clara%s: %s", "" if finished else " (partial)", display_text)
+                                display_text = agent_tx_buf.strip()
+                                dt = time.time() - turn_start_at if turn_start_at else 0
+                                log.info("Clara%s [+%.2fs]: %s", "" if finished else " (partial)", dt, display_text)
                                 await websocket.send_text(json.dumps({
                                     "type": "transcript",
                                     "role": "agent",
@@ -342,7 +354,8 @@ async def websocket_endpoint(websocket: WebSocket, client_id: str):
                                     if finished:
                                         user_tx_buf = ""
                                     continue
-                                log.info("User%s: %s", "" if finished else " (partial)", display_text)
+                                dt = time.time() - turn_start_at if turn_start_at else 0
+                                log.info("User%s [+%.2fs]: %s", "" if finished else " (partial)", dt, display_text)
                                 await websocket.send_text(json.dumps({
                                     "type": "transcript",
                                     "role": "user",
@@ -353,7 +366,9 @@ async def websocket_endpoint(websocket: WebSocket, client_id: str):
 
                         # Turn complete
                         if event.turn_complete:
-                            log.info("Turn complete")
+                            dt = time.time() - turn_start_at if turn_start_at else 0
+                            log.info("--- TURN COMPLETE [%.2fs] ---", dt)
+                            turn_start_at = None # Reset for next turn
                             user_tx_buf = ""
                             agent_tx_buf = ""
                             await websocket.send_text(json.dumps({"type": "turn_complete"}))
