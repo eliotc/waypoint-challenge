@@ -700,6 +700,95 @@
       letter-spacing: 0.04em;
       margin: 4px 0 8px;
     }
+
+    /* Card group navigation */
+    .card-nav {
+      display: flex;
+      align-items: center;
+      gap: 6px;
+      padding: 10px 24px;
+      border-bottom: 1px solid var(--border-primary);
+      background: white;
+      flex-wrap: wrap;
+      min-height: 0;
+      max-height: 0;
+      overflow: hidden;
+      opacity: 0;
+      transition: all 0.3s var(--ease-out-quint);
+    }
+
+    .card-nav.has-groups {
+      min-height: auto;
+      max-height: 100px;
+      opacity: 1;
+      padding: 10px 24px;
+    }
+
+    .card-nav-label {
+      font-size: 10px;
+      font-weight: 600;
+      text-transform: uppercase;
+      letter-spacing: 0.06em;
+      color: var(--color-tertiary);
+      margin-right: 4px;
+    }
+
+    .card-nav-pill {
+      font-size: 11px;
+      font-weight: 500;
+      padding: 5px 12px;
+      border-radius: var(--radius-rounded);
+      border: 1px solid var(--border-secondary);
+      background: var(--bg-primary);
+      color: var(--color-secondary);
+      cursor: pointer;
+      transition: all 0.2s ease;
+      white-space: nowrap;
+      display: flex;
+      align-items: center;
+      gap: 5px;
+    }
+
+    .card-nav-pill:hover {
+      border-color: var(--accent-teal);
+      color: var(--accent-teal);
+      background: var(--accent-teal-light);
+    }
+
+    .card-nav-pill.active {
+      background: var(--accent-teal);
+      color: white;
+      border-color: var(--accent-teal);
+    }
+
+    .card-nav-pill .pill-icon {
+      width: 14px;
+      height: 14px;
+      flex-shrink: 0;
+    }
+
+    .card-nav-pill .pill-count {
+      font-size: 10px;
+      font-weight: 700;
+      background: rgba(0, 0, 0, 0.08);
+      padding: 1px 5px;
+      border-radius: 8px;
+    }
+
+    .card-nav-pill.active .pill-count {
+      background: rgba(255, 255, 255, 0.25);
+    }
+
+    .card-group {
+      display: none;
+    }
+
+    .card-group.visible {
+      display: flex;
+      flex-direction: column;
+      gap: 12px;
+      animation: viaMsgIn 0.3s var(--ease-out-quint);
+    }
   </style>
 </head>
 
@@ -759,6 +848,7 @@
     <!-- Right: card sidebar -->
     <div class="sidebar">
       <div class="sidebar-header">Course &amp; Event Cards</div>
+      <div class="card-nav" id="cardNav"></div>
       <div class="sidebar-scroll" id="sidebarScroll">
         <div class="no-cards" id="noCards">
           <div class="no-cards-icon">
@@ -784,8 +874,8 @@
     let ws = null, recording = false, muted = false, userInitiatedDisconnect = false;
     let audioCtxIn = null, audioCtxOut = null, workletNode = null, mediaStream = null;
     let nextPlayTime = 0;
-    let agentMsgEl = null, agentBuffer = "", agentSpeaking = false;
-    let userMsgEl = null, userBuffer = "";
+    let agentMsgEl = null, agentSpeaking = false;
+    let userMsgEl = null;
 
     // ── DOM ───────────────────────────────────────────────────────────────────────
     const voiceBtn = document.getElementById("voiceBtn");
@@ -795,6 +885,7 @@
     const emptyMsg = document.getElementById("emptyMsg");
     const sidebarScroll = document.getElementById("sidebarScroll");
     const noCards = document.getElementById("noCards");
+    const cardNav = document.getElementById("cardNav");
     const statusDot = document.getElementById("statusDot");
     const statusLabel = document.getElementById("statusLabel");
     const disconnectBtn = document.getElementById("disconnectBtn");
@@ -850,10 +941,11 @@
       switch (msg.type) {
         case "transcript":
           if (msg.text && !msg.text.trim().startsWith("**")) {
+            const finished = msg.finished ?? msg.final ?? false;
             if (msg.role === "agent") {
-              appendOrUpdateAgent(msg.text, msg.final);
+              appendOrUpdateAgent(msg.text, finished);
             } else {
-              appendOrUpdateUser(msg.text, msg.final);
+              appendOrUpdateUser(msg.text, finished);
             }
           }
           break;
@@ -891,7 +983,7 @@
       return wrap;
     }
 
-    function appendOrUpdateUser(text, final = false) {
+    function appendOrUpdateUser(text, finished = false) {
       if (!userMsgEl) {
         removeEmptyMsg();
         userMsgEl = document.createElement("div");
@@ -901,22 +993,11 @@
         bubble.innerHTML = `<span class="via-text"></span>`;
         userMsgEl.appendChild(bubble);
         messages.appendChild(userMsgEl);
-        userBuffer = ""; // Reset local buffer for new bubble
       }
-      
-      if (final) {
-        userBuffer = text; 
-      } else {
-        // Smart spacing for deltas: if this doesn't start with space and last char isn't space, add one
-        if (userBuffer && !text.startsWith(" ") && !userBuffer.endsWith(" ")) {
-            userBuffer += " " + text;
-        } else {
-            userBuffer += text;
-        }
-      }
-      
-      userMsgEl.querySelector(".via-text").textContent = userBuffer;
-      if (final) flushUser();
+
+      // Backend sends cumulative text — just replace in-place
+      userMsgEl.querySelector(".via-text").textContent = text;
+      if (finished) flushUser();
       messages.scrollTop = messages.scrollHeight;
     }
 
@@ -925,10 +1006,9 @@
         userMsgEl.querySelector(".via-msg-bubble").classList.remove("via-typing");
         userMsgEl = null;
       }
-      userBuffer = "";
     }
 
-    function appendOrUpdateAgent(text, final = false) {
+    function appendOrUpdateAgent(text, finished = false) {
       setAgentSpeaking(true);
       if (!agentMsgEl) {
         removeEmptyMsg();
@@ -939,24 +1019,13 @@
         bubble.innerHTML = `<span class="via-text"></span>`;
         agentMsgEl.appendChild(bubble);
         messages.appendChild(agentMsgEl);
-        agentBuffer = ""; // Reset local buffer for new bubble
       }
-      
-      if (final) {
-        agentBuffer = text;
-      } else {
-        // Smart spacing for deltas
-        if (agentBuffer && !text.startsWith(" ") && !agentBuffer.endsWith(" ")) {
-            agentBuffer += " " + text;
-        } else {
-            agentBuffer += text;
-        }
-      }
-      
+
+      // Backend sends cumulative text — just replace in-place
       const bubble = agentMsgEl.querySelector(".via-msg-bubble");
-      bubble.querySelector(".via-text").textContent = agentBuffer;
-      
-      if (!final) {
+      bubble.querySelector(".via-text").textContent = text;
+
+      if (!finished) {
         if (!bubble.querySelector(".via-thinking-dots")) {
           const dots = document.createElement("span");
           dots.className = "via-thinking-dots";
@@ -968,7 +1037,7 @@
         if (dots) dots.remove();
         flushAgent();
       }
-      
+
       messages.scrollTop = messages.scrollHeight;
     }
 
@@ -977,7 +1046,6 @@
         agentMsgEl.querySelector(".via-msg-bubble").classList.remove("via-typing");
         agentMsgEl = null;
       }
-      agentBuffer = "";
     }
 
     function setAgentSpeaking(speaking) {
@@ -1016,26 +1084,88 @@
     // ── Cards ─────────────────────────────────────────────────────────────────────
     function esc(s) { return (s || "").replace(/&/g, "&amp;").replace(/</g, "&lt;").replace(/>/g, "&gt;"); }
 
+    // Card group tracking
+    let cardGroups = []; // [{id, label, type, el, pillEl}]
+    let activeGroupId = null;
+
     function renderCard(msg) {
       if (noCards?.parentNode) noCards.remove();
       const { card_type, data } = msg;
-      const wrap = document.createElement("div");
+
+      // Create group container
+      const group = document.createElement("div");
+      group.className = "card-group";
+      const groupId = `cg-${Date.now()}-${Math.random().toString(36).slice(2, 6)}`;
+      group.id = groupId;
+
+      // Determine label and item count
+      let label = card_type || "Info";
+      let count = 0;
 
       if (card_type === "courses") {
-        (data.courses || data.recommendations || []).forEach(c => wrap.appendChild(makeCourseCard(c)));
+        const items = data.courses || data.recommendations || [];
+        count = items.length;
+        items.forEach(c => group.appendChild(makeCourseCard(c)));
+        label = "Courses";
       } else if (card_type === "events") {
-        (data.events || []).forEach(e => wrap.appendChild(makeEventCard(e)));
+        const items = data.events || [];
+        count = items.length;
+        items.forEach(e => group.appendChild(makeEventCard(e)));
+        label = "Events";
       } else if (card_type === "booking") {
-        wrap.appendChild(makeBookingCard(data));
+        count = 1;
+        group.appendChild(makeBookingCard(data));
+        label = "Booking";
       } else {
+        count = 1;
         const card = document.createElement("div");
         card.className = "card";
         card.innerHTML = `<div class="card-type-bar info">Info</div>
       <div class="card-body"><div class="card-detail">${esc(msg.spoken_summary || "")}</div></div>`;
-        wrap.appendChild(card);
+        group.appendChild(card);
+        label = "Info";
       }
 
-      sidebarScroll.insertBefore(wrap, sidebarScroll.firstChild);
+      // Add group to sidebar
+      sidebarScroll.insertBefore(group, sidebarScroll.firstChild);
+
+      // Add "Results" label on first group
+      if (cardGroups.length === 0) {
+        const navLabel = document.createElement("span");
+        navLabel.className = "card-nav-label";
+        navLabel.textContent = "Results:";
+        cardNav.appendChild(navLabel);
+      }
+
+      // Create nav pill with icon and count
+      const icons = {
+        Courses: `<svg class="pill-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M2 3h6a4 4 0 0 1 4 4v14a3 3 0 0 0-3-3H2z"/><path d="M22 3h-6a4 4 0 0 0-4 4v14a3 3 0 0 1 3-3h7z"/></svg>`,
+        Events: `<svg class="pill-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><rect x="3" y="4" width="18" height="18" rx="2" ry="2"/><line x1="16" y1="2" x2="16" y2="6"/><line x1="8" y1="2" x2="8" y2="6"/><line x1="3" y1="10" x2="21" y2="10"/></svg>`,
+        Booking: `<svg class="pill-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M20 21v-2a4 4 0 0 0-4-4H8a4 4 0 0 0-4 4v2"/><circle cx="12" cy="7" r="4"/></svg>`,
+        Info: `<svg class="pill-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="12" cy="12" r="10"/><line x1="12" y1="16" x2="12" y2="12"/><line x1="12" y1="8" x2="12.01" y2="8"/></svg>`,
+      };
+      const time = new Date().toLocaleTimeString("en-AU", { hour: "2-digit", minute: "2-digit" });
+      const pill = document.createElement("button");
+      pill.className = "card-nav-pill";
+      pill.innerHTML = `${icons[label] || ""} ${label} <span class="pill-count">${count}</span>`;
+      pill.title = `${label} results · ${time}`;
+      pill.onclick = () => showCardGroup(groupId);
+      cardNav.appendChild(pill);
+      cardNav.classList.add("has-groups");
+
+      // Track this group
+      cardGroups.push({ id: groupId, label, type: card_type, el: group, pillEl: pill });
+
+      // Show this group (latest)
+      showCardGroup(groupId);
+    }
+
+    function showCardGroup(groupId) {
+      activeGroupId = groupId;
+      cardGroups.forEach(g => {
+        g.el.classList.toggle("visible", g.id === groupId);
+        g.pillEl.classList.toggle("active", g.id === groupId);
+      });
     }
 
     function makeCourseCard(c) {

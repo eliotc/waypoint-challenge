@@ -133,17 +133,19 @@ def search_courses(query: str, faculty: Optional[str] = None) -> dict:
         with conn.cursor(cursor_factory=psycopg2.extras.RealDictCursor) as cur:
             cur.execute(sql, (emb, faculty, f"%{faculty}%" if faculty else None, emb))
             rows = cur.fetchall()
-            log.debug("SQL executed, found %d rows", len(rows))
-        courses = [_to_json_safe(dict(r)) for r in rows]
-        data = {"courses": courses, "count": len(rows)}
-        
-        # Directly emit card to ensure delivery
-        if _display_callbacks:
-            payload = {"type": "card", "card_type": "courses", "data": data, "spoken_summary": "Here are some matching courses."}
-            for loop, callback in _display_callbacks.values():
-                asyncio.run_coroutine_threadsafe(callback(payload), loop)
-                
-        return data
+    courses = [_to_json_safe(dict(r)) for r in rows]
+    log.info("search_courses found %d results for '%s'", len(courses), query)
+
+    # Send full data directly to browser (bypasses model entirely)
+    if _display_callbacks:
+        payload = {"type": "card", "card_type": "courses", "data": {"courses": courses, "count": len(courses)}, "spoken_summary": "Here are some matching courses."}
+        for loop, callback in _display_callbacks.values():
+            asyncio.run_coroutine_threadsafe(callback(payload), loop)
+
+    # Return minimal summary to model — full data already on the card.
+    # Keeping the response small reduces 1008 crashes with native audio.
+    names = [c["name"] for c in courses[:3]]
+    return {"count": len(courses), "top_courses": names}
 
 
 # ── Tool 2: search_events ────────────────────────────────────────────────────
@@ -190,16 +192,17 @@ def search_events(event_type: Optional[str] = None, date_range: Optional[str] = 
         d["start_at"] = d["start_at"].isoformat() if d["start_at"] else None
         d["end_at"]   = d["end_at"].isoformat()   if d["end_at"]   else None
         events.append(d)
+    log.info("search_events found %d results (type=%s)", len(events), event_type)
 
-    data = {"events": events, "count": len(events)}
-    
-    # Directly emit card to ensure delivery
+    # Send full data directly to browser
     if _display_callbacks:
-        payload = {"type": "card", "card_type": "events", "data": data, "spoken_summary": "Here are some upcoming events."}
+        payload = {"type": "card", "card_type": "events", "data": {"events": events, "count": len(events)}, "spoken_summary": "Here are some upcoming events."}
         for loop, callback in _display_callbacks.values():
             asyncio.run_coroutine_threadsafe(callback(payload), loop)
-            
-    return data
+
+    # Return minimal summary to model
+    titles = [e["title"] for e in events[:3]]
+    return {"count": len(events), "upcoming": titles}
 
 
 # ── Tool 3: recommend_courses ─────────────────────────────────────────────────
@@ -247,20 +250,17 @@ def recommend_courses(
         d = _to_json_safe(dict(r))
         d["match_pct"] = round(float(d["similarity"]) * 100)
         results.append(d)
+    log.info("recommend_courses found %d results for '%s'", len(results), query)
 
-    data = {
-        "recommendations": results,
-        "count": len(results),
-        "query_summary": query,
-    }
-    
-    # Directly emit card
+    # Send full data directly to browser
     if _display_callbacks:
         payload = {"type": "card", "card_type": "courses", "data": {"courses": results, "count": len(results)}, "spoken_summary": "I recommend these courses based on your interests."}
         for loop, callback in _display_callbacks.values():
             asyncio.run_coroutine_threadsafe(callback(payload), loop)
-            
-    return data
+
+    # Return minimal summary to model
+    names = [r["name"] for r in results[:3]]
+    return {"count": len(results), "top_recommendations": names}
 
 
 # ── Tool 4: book_campus_tour ──────────────────────────────────────────────────
@@ -328,6 +328,7 @@ def display_data(type: str, data: dict, spoken_summary: str) -> dict:
     Returns immediately; card delivery is async via WebSocket.
     """
     payload = {"type": "card", "card_type": type, "data": data, "spoken_summary": spoken_summary}
+    log.info("display_data called: type=%s, callbacks=%d", type, len(_display_callbacks))
 
     if _display_callbacks:
         for loop, callback in _display_callbacks.values():

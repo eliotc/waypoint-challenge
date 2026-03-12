@@ -22,6 +22,7 @@ import json
 import logging
 import os
 import pathlib
+import re
 import sys
 
 from contextlib import asynccontextmanager
@@ -72,8 +73,9 @@ async def _patched_send_content(self, content: types.Content):
                     ]
                 }
             })
-            log.debug("Tool response payload (%d bytes): %s", len(payload), payload[:300])
+            log.info("Sending tool response (%d bytes): %s", len(payload), payload[:300])
             await self._gemini_session._ws.send(payload)
+            log.info("Tool response sent successfully")
     else:
         await self._gemini_session.send(
             input=types.LiveClientContent(
@@ -139,6 +141,25 @@ async def index():
 async def health():
     return {"status": "ok"}
 
+def _sanitize_session_events(events):
+    """Sanitize session events for safe replay on reconnect.
+
+    Removes:
+    - Audio inline_data parts (native audio models reject these in history)
+    - Function call / function response parts (can cause 1007 if malformed
+      from a crashed turn)
+    - Empty content objects left after filtering
+    """
+    for event in events:
+        if event.content and event.content.parts:
+            event.content.parts = [
+                p for p in event.content.parts
+                if not (p.inline_data and p.inline_data.mime_type
+                        and p.inline_data.mime_type.startswith("audio/"))
+                and not p.function_call
+                and not p.function_response
+            ]
+
 # ── WebSocket bridge ──────────────────────────────────────────────────────────
 @app.websocket("/ws/{client_id}")
 async def websocket_endpoint(websocket: WebSocket, client_id: str):
@@ -172,15 +193,9 @@ async def websocket_endpoint(websocket: WebSocket, client_id: str):
             )
             log.info("ADK session created: %s", session.id)
         else:
-            log.info("ADK session resumed: %s (history: %d events)", 
+            log.info("ADK session resumed: %s (history: %d events)",
                      session.id, len(session.events))
-            # Strip audio from model responses to prevent 1007 on reconnect
-            # Native Audio models do not accept audio in context history.
-            for event in session.events:
-                if event.content and event.content.parts:
-                    for part in event.content.parts:
-                        if part.inline_data:
-                            part.inline_data = None
+            _sanitize_session_events(session.events)
 
     except Exception as e:
         # Fallback to fresh session if retrieval fails
@@ -236,15 +251,16 @@ async def websocket_endpoint(websocket: WebSocket, client_id: str):
 
         async def run_live_loop():
             """Process ADK events with a retry loop for transient errors and session limits."""
-            max_attempts = 10 # Increase for long-running idle recovery
+            nonlocal session
+            max_attempts = 10
+            consecutive_1007 = 0
             for attempt in range(1, max_attempts + 1):
                 try:
                     if attempt > 1:
                         log.info("Retry attempt %d/%d after session interruption...", attempt, max_attempts)
-                        await asyncio.sleep(2) # Small backoff to prevent tight loops
-                        
-                        # Drain the queue to prevent 1007 invalid payload from stale audio floods
-                        # that accumulated while the connection was down.
+                        await asyncio.sleep(2)
+
+                        # Drain stale audio from the queue
                         cleared = 0
                         while not live_request_queue._queue.empty():
                             try:
@@ -253,33 +269,33 @@ async def websocket_endpoint(websocket: WebSocket, client_id: str):
                             except asyncio.QueueEmpty:
                                 break
                         log.info("Drained %d stale items from live_request_queue before retry.", cleared)
+
+                        # If we've hit 2+ consecutive 1007s, the session history is
+                        # irrecoverably corrupted. Start fresh.
+                        if consecutive_1007 >= 2:
+                            log.warning("Session history corrupted (2+ consecutive 1007s). Creating fresh session.")
+                            session = await session_service.create_session(
+                                app_name=APP_NAME,
+                                user_id=client_id,
+                                session_id=f"{client_id}-{attempt}",
+                            )
+                            consecutive_1007 = 0
+                        else:
+                            # Sanitize session events (audio, function calls/responses)
+                            _sanitize_session_events(session.events)
                     
+                    # Cumulative transcript buffers (matching Vanina/raw SDK pattern):
+                    # ADK yields deltas; we accumulate and send the full buffer each time.
+                    user_tx_buf = ""
+                    agent_tx_buf = ""
+
                     async for event in runner.run_live(
                         user_id=client_id,
                         session_id=session.id,
                         live_request_queue=live_request_queue,
                         run_config=run_config,
                     ):
-                        in_text = getattr(getattr(event, "input_transcription", None), "text", None)
-                        out_text = getattr(getattr(event, "output_transcription", None), "text", None)
-                        is_turn_complete = getattr(event, "turn_complete", False)
                         is_partial = getattr(event, "partial", True)
-
-                        # Logging
-                        if in_text:
-                            if is_partial:
-                                log.debug("User (partial): %s", in_text)
-                            else:
-                                log.info("User: %s", in_text)
-                        
-                        if out_text:
-                            if is_partial:
-                                log.debug("Clara (partial): %s", out_text)
-                            else:
-                                log.info("Clara: %s", out_text)
-                        
-                        if is_turn_complete:
-                            log.info("Turn complete")
 
                         # Audio output
                         if event.content and event.content.parts:
@@ -287,34 +303,59 @@ async def websocket_endpoint(websocket: WebSocket, client_id: str):
                                 if part.inline_data and part.inline_data.mime_type.startswith("audio/"):
                                     await websocket.send_bytes(part.inline_data.data)
 
-                        # Transcriptions — role: agent
+                        # Transcriptions — role: agent (cumulative buffer)
                         if event.output_transcription:
-                            text = (getattr(event.output_transcription, "text", "") or "").strip()
-                            if text and not text.startswith("**"):
+                            chunk = (getattr(event.output_transcription, "text", "") or "")
+                            # Filter control characters (e.g. <ctrl46>) that native audio
+                            # model sometimes emits after tool responses
+                            chunk = re.sub(r'<ctrl\d+>', '', chunk)
+                            if chunk and not chunk.strip().startswith("**"):
+                                finished = not is_partial
+                                if finished:
+                                    # Final already contains full text from ADK — use as-is
+                                    display_text = chunk.strip()
+                                    agent_tx_buf = ""
+                                else:
+                                    agent_tx_buf += chunk
+                                    display_text = agent_tx_buf.strip()
+                                log.info("Clara%s: %s", "" if finished else " (partial)", display_text)
                                 await websocket.send_text(json.dumps({
-                                    "type": "transcript", 
-                                    "role": "agent", 
-                                    "text": text,
-                                    "final": not is_partial
+                                    "type": "transcript",
+                                    "role": "agent",
+                                    "text": display_text,
+                                    "finished": finished,
                                 }))
 
-                        # Transcriptions — role: user
+                        # Transcriptions — role: user (cumulative buffer)
                         if event.input_transcription:
-                            text = (getattr(event.input_transcription, "text", "") or "").strip()
-                            if text:
-                                # Filter hidden prompt (handles both deltas and cumulative)
-                                if text in HIDDEN_GREETING_PROMPT:
-                                    log.debug("Filtered hidden greeting prompt fragment: %s", text)
+                            chunk = (getattr(event.input_transcription, "text", "") or "")
+                            if chunk:
+                                finished = not is_partial
+                                if finished:
+                                    # Final already contains full text from ADK — use as-is
+                                    display_text = chunk.strip()
+                                    user_tx_buf = ""
                                 else:
-                                    await websocket.send_text(json.dumps({
-                                        "type": "transcript", 
-                                        "role": "user", 
-                                        "text": text,
-                                        "final": not is_partial,
-                                    }))
+                                    user_tx_buf += chunk
+                                    display_text = user_tx_buf.strip()
+                                if display_text in HIDDEN_GREETING_PROMPT:
+                                    if finished:
+                                        user_tx_buf = ""
+                                    continue
+                                log.info("User%s: %s", "" if finished else " (partial)", display_text)
+                                await websocket.send_text(json.dumps({
+                                    "type": "transcript",
+                                    "role": "user",
+                                    "text": display_text,
+                                    "finished": finished,
+                                }))
+
 
                         # Turn complete
                         if event.turn_complete:
+                            log.info("Turn complete")
+                            user_tx_buf = ""
+                            agent_tx_buf = ""
                             await websocket.send_text(json.dumps({"type": "turn_complete"}))
                     
                     # If we finish successfully, break the retry loop
@@ -322,11 +363,15 @@ async def websocket_endpoint(websocket: WebSocket, client_id: str):
 
                 except Exception as e:
                     err_msg = str(e)
-                    if ("1011" in err_msg or "1008" in err_msg) and attempt < max_attempts:
+                    if any(code in err_msg for code in ("1007", "1008", "1011")) and attempt < max_attempts:
                         log.warning("Attempt %d failed (error %s). Retrying...", attempt, err_msg)
-                        await asyncio.sleep(0.5 * attempt) # Basic backoff
+                        if "1007" in err_msg:
+                            consecutive_1007 += 1
+                        else:
+                            consecutive_1007 = 0
+                        await asyncio.sleep(0.5 * attempt)
                         continue
-                    raise # Re-raise if out of attempts or different error
+                    raise
 
         async def send_to_browser():
             log.info("Starting ADK run_live for session %s (history: %d)", 
