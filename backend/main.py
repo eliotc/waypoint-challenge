@@ -34,6 +34,7 @@ os.environ.setdefault("GOOGLE_GENAI_USE_VERTEXAI", "FALSE")
 
 sys.path.insert(0, str(pathlib.Path(__file__).parent))
 
+from collections import defaultdict
 from fastapi import FastAPI, WebSocket, WebSocketDisconnect
 from fastapi.responses import FileResponse
 from fastapi.middleware.cors import CORSMiddleware
@@ -103,7 +104,7 @@ APP_NAME   = "waypoint"
 STATIC_DIR = pathlib.Path(__file__).parent.parent / "frontend"
 log        = logging.getLogger(__name__)
 
-HIDDEN_GREETING_PROMPT = "(System: The student has just arrived. Please greet them warmly as Clara, the Kingsford University course counsellor. Ask how you can help them explore courses or events today. Keep it brief and friendly.)"
+HIDDEN_GREETING_PROMPT = "(System: The student has just arrived. Please greet them warmly as Clara, the Kingsford University course counsellor. Introduce yourself briefly and ask what brings them to Kingsford University today — do NOT search for anything yet, just wait for their response.)"
 logging.basicConfig(
     level=logging.INFO, 
     format="%(asctime)s.%(msecs)03d %(levelname)s  %(message)s",
@@ -132,6 +133,25 @@ app.add_middleware(
     allow_methods=["*"],
     allow_headers=["*"],
 )
+
+# ── Rate limiting ─────────────────────────────────────────────────────────────
+# Simple in-memory per-IP limiter: max 2 concurrent WS connections, max 20/hour.
+# Resets hourly. Sufficient for a hackathon demo — no extra dependencies needed.
+_ip_active: dict[str, int] = defaultdict(int)       # IP → active connections
+_ip_hourly: dict[str, list[float]] = defaultdict(list)  # IP → connection timestamps
+_MAX_CONCURRENT = 2
+_MAX_PER_HOUR   = 20
+
+def _check_rate_limit(ip: str) -> str | None:
+    """Return an error message if the IP is rate-limited, else None."""
+    now = time.time()
+    # Purge timestamps older than 1 hour
+    _ip_hourly[ip] = [t for t in _ip_hourly[ip] if now - t < 3600]
+    if _ip_active[ip] >= _MAX_CONCURRENT:
+        return f"Too many concurrent connections from your IP (max {_MAX_CONCURRENT})"
+    if len(_ip_hourly[ip]) >= _MAX_PER_HOUR:
+        return f"Rate limit exceeded (max {_MAX_PER_HOUR} connections/hour)"
+    return None
 
 # ── HTTP routes ───────────────────────────────────────────────────────────────
 @app.get("/")
@@ -165,7 +185,18 @@ def _sanitize_session_events(events):
 @app.websocket("/ws/{client_id}")
 async def websocket_endpoint(websocket: WebSocket, client_id: str):
     await websocket.accept()
-    log.info("WS connected: %s", client_id)
+    client_ip = websocket.client.host if websocket.client else "unknown"
+
+    err = _check_rate_limit(client_ip)
+    if err:
+        log.warning("Rate limit hit for %s: %s", client_ip, err)
+        await websocket.send_text(json.dumps({"type": "error", "message": err}))
+        await websocket.close(code=1008)
+        return
+
+    _ip_active[client_ip] += 1
+    _ip_hourly[client_ip].append(time.time())
+    log.info("WS connected: %s (ip=%s active=%d)", client_id, client_ip, _ip_active[client_ip])
 
     loop = asyncio.get_event_loop()
 
@@ -423,4 +454,5 @@ async def websocket_endpoint(websocket: WebSocket, client_id: str):
         log.error("WS session error: %s", e)
     finally:
         unregister_display_callback(client_id)
-        log.info("WS disconnected: %s", client_id)
+        _ip_active[client_ip] = max(0, _ip_active[client_ip] - 1)
+        log.info("WS disconnected: %s (ip=%s active=%d)", client_id, client_ip, _ip_active[client_ip])

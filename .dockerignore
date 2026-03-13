@@ -1,0 +1,12 @@
+.venv/
+.env
+__pycache__/
+.git/
+.memory/
+*.pyc
+.claude/
+.gitignore
+README.md
+HACKATHON_PLAN.md
+test_adk_events.py
+adk_run_live.py

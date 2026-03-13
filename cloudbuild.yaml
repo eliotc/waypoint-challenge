@@ -1,0 +1,37 @@
+substitutions:
+  _REGION: us-central1
+  _SERVICE: waypoint
+  _CLOUDSQL_INSTANCE: waypoint-db
+  _AR_REPO: waypoint
+
+steps:
+  # 1. Build the container image
+  - name: 'gcr.io/cloud-builders/docker'
+    args: ['build', '-t', '${_REGION}-docker.pkg.dev/$PROJECT_ID/${_AR_REPO}/${_SERVICE}:$COMMIT_SHA', '.']
+
+  # 2. Push the image to Artifact Registry
+  - name: 'gcr.io/cloud-builders/docker'
+    args: ['push', '${_REGION}-docker.pkg.dev/$PROJECT_ID/${_AR_REPO}/${_SERVICE}:$COMMIT_SHA']
+
+  # 3. Deploy to Cloud Run
+  - name: 'gcr.io/google.com/cloudsdktool/cloud-sdk'
+    args:
+      - gcloud
+      - run
+      - deploy
+      - ${_SERVICE}
+      - --image=${_REGION}-docker.pkg.dev/$PROJECT_ID/${_AR_REPO}/${_SERVICE}:$COMMIT_SHA
+      - --region=${_REGION}
+      - --platform=managed
+      - --allow-unauthenticated
+      - --service-account=waypoint-runner@$PROJECT_ID.iam.gserviceaccount.com
+      - --add-cloudsql-instances=$PROJECT_ID:${_REGION}:${_CLOUDSQL_INSTANCE}
+      - --set-secrets=DATABASE_URL=waypoint-db-url:latest
+      - --set-env-vars=GOOGLE_CLOUD_PROJECT=$PROJECT_ID,GOOGLE_CLOUD_LOCATION=${_REGION},VERTEX_AI_LOCATION=${_REGION},GOOGLE_GENAI_USE_VERTEXAI=TRUE,MODEL_NAME=gemini-live-2.5-flash-native-audio
+      - --memory=1Gi
+      - --concurrency=10
+      - --max-instances=2
+      - --min-instances=0
+
+images:
+  - '${_REGION}-docker.pkg.dev/$PROJECT_ID/${_AR_REPO}/${_SERVICE}:$COMMIT_SHA'

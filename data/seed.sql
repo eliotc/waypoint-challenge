@@ -1,4 +1,4 @@
--- Kingsford University seed data (no embeddings — seed.py adds those)
+-- Kingsford University seed data (no embeddings — seed.py adds those for courses, knowledge_docs, scholarships)
 
 -- ── Courses ───────────────────────────────────────────────────────────────────
 INSERT INTO courses (code, name, faculty, level, study_mode, duration_years, atar_cutoff, annual_fee_aud, description, career_outcomes) VALUES
@@ -33,47 +33,119 @@ INSERT INTO events (title, event_type, start_at, end_at, location, description, 
  'OpenDay',
  '2026-03-21 09:00+11', '2026-03-21 16:00+11',
  'Main Campus, Kingsford Blvd, Melbourne',
- 'Explore faculties, meet academics, tour labs and student spaces. Free parking on campus.',
+ 'Explore all five faculties, meet academics, tour labs and student spaces. Free parking on campus. Register online to receive your welcome pack in advance.',
  2000, 834),
 
 ('Engineering & Tech Info Session',
  'InfoSession',
- '2026-03-14 11:00+11', '2026-03-14 12:30+11',
+ '2026-03-19 18:00+11', '2026-03-19 19:30+11',
  'Engineering Precinct, Room E201',
- 'Deep dive into our CS, Software Engineering, and Cybersecurity programs. Q&A with current students.',
- 80, 23),
+ 'Deep dive into our CS, Software Engineering, Cybersecurity, and Cloud Computing programs. Q&A with current students and program directors.',
+ 80, 31),
 
 ('Postgrad Open Evening',
  'InfoSession',
- '2026-03-18 18:00+11', '2026-03-18 20:00+11',
+ '2026-03-25 18:00+11', '2026-03-25 20:00+11',
  'Online (Zoom)',
- 'Explore our Masters and Graduate Certificate programs. Hear from program directors and alumni.',
+ 'Explore our Masters and Graduate Certificate programs. Hear from program directors and alumni about career outcomes and study pathways.',
  500, 211),
 
 ('Health Sciences Campus Tour',
  'CampusTour',
- '2026-03-12 10:00+11', '2026-03-12 11:30+11',
+ '2026-03-22 10:00+11', '2026-03-22 11:30+11',
  'Health Sciences Building, 45 Wellbeing Way',
- 'Guided tour of simulation labs, clinical skills rooms, and student common areas.',
- 20, 7),
+ 'Guided tour of simulation labs, clinical skills rooms, and student common areas. Meet Nursing and OT students in person.',
+ 20, 9),
 
 ('Business & Commerce Info Night',
  'InfoSession',
- '2026-03-19 17:30+11', '2026-03-19 19:00+11',
+ '2026-03-26 17:30+11', '2026-03-26 19:00+11',
  'Business School Atrium',
- 'MBA, Finance, and BBA program overview. Scholarship information and entry requirement Q&A.',
+ 'MBA, Finance, and BBA program overview. Scholarship information, entry requirement Q&A, and networking with alumni.',
  120, 54),
 
 ('Saturday Campus Tour',
  'CampusTour',
  '2026-03-15 10:00+11', '2026-03-15 11:30+11',
  'Main Campus Welcome Centre',
- 'General campus tour covering library, student hub, accommodation, and key facilities.',
+ 'General campus tour covering library, student hub, accommodation, sports facilities, and key buildings. No registration required — just show up!',
  25, 12),
 
-('Scholarship Webinar',
+('Saturday Campus Tour',
+ 'CampusTour',
+ '2026-03-22 10:00+11', '2026-03-22 11:30+11',
+ 'Main Campus Welcome Centre',
+ 'General campus tour covering library, student hub, accommodation, sports facilities, and key buildings. No registration required — just show up!',
+ 25, 18),
+
+('Scholarship & Financial Aid Webinar',
  'Webinar',
- '2026-03-11 12:00+11', '2026-03-11 13:00+11',
+ '2026-03-17 12:00+11', '2026-03-17 13:00+11',
  'Online (Zoom)',
- 'Learn about merit scholarships, equity bursaries, and the application process for 2027 entry.',
- 1000, 678);
+ 'Learn about merit scholarships, equity bursaries, and the application process for 2027 entry. Our Financial Aid team will walk through HECS-HELP eligibility, payment plans, and how to apply.',
+ 1000, 634),
+
+('Arts & Humanities Open Studio',
+ 'InfoSession',
+ '2026-03-28 14:00+11', '2026-03-28 16:00+11',
+ 'Creative Arts Building, Studio A3',
+ 'Explore Psychology, Digital Media, and Education programs. Live demonstrations in our film studio and UX design lab.',
+ 60, 27),
+
+('International Students Welcome Session',
+ 'InfoSession',
+ '2026-04-01 10:00+11', '2026-04-01 12:00+11',
+ 'International Centre, Ground Floor',
+ 'Dedicated session for prospective international students covering visa pathways, English language requirements, on-campus housing, and student support services.',
+ 150, 88);
+
+-- ── Scholarships ───────────────────────────────────────────────────────────────
+INSERT INTO scholarships (name, type, faculty, annual_value_aud, duration_years, eligibility, description, application_deadline) VALUES
+
+('Kingsford Academic Excellence Scholarship',
+ 'Merit', NULL, 8000, 3,
+ 'ATAR 95 or above, commencing undergraduate domestic student.',
+ 'Our flagship merit scholarship rewards outstanding academic achievement. Valued at $8,000 per year for the duration of your degree. Recipients are also invited to the annual Excellence Dinner and mentoring program.',
+ '2026-10-31'),
+
+('Vice-Chancellor''s Future Leaders Award',
+ 'Merit', NULL, 5000, 4,
+ 'ATAR 90 or above, demonstrated leadership in school or community.',
+ 'Awarded to students who show exceptional leadership potential alongside academic achievement. Includes a $5,000 annual stipend and access to the Future Leaders development program.',
+ '2026-10-31'),
+
+('Kingsford Equity Bursary',
+ 'Equity', NULL, 3000, 1,
+ 'Domestic student experiencing financial hardship; household income below $50,000 p.a.',
+ 'A needs-based bursary of $3,000 to help cover living and study costs. Renewable annually subject to satisfactory academic progress and continued eligibility. Applications assessed on a rolling basis.',
+ NULL),
+
+('First-in-Family Scholarship',
+ 'Equity', NULL, 4000, 3,
+ 'First person in your immediate family to attend university; domestic student.',
+ 'Supporting students who are blazing a trail in higher education. Provides $4,000 per year plus access to peer mentoring, career workshops, and a dedicated First-in-Family support coordinator.',
+ '2026-11-15'),
+
+('Engineering & Technology Industry Scholarship',
+ 'Faculty', 'Engineering & Technology', 6000, 3,
+ 'Enrolling in an undergraduate Engineering & Technology degree; ATAR 85+.',
+ 'Co-funded by our industry partners including TechVic and Melbourne Digital Alliance. Includes $6,000 per year plus a guaranteed industry placement in Year 2. Strong preference for students with demonstrated interest in AI or cybersecurity.',
+ '2026-10-15'),
+
+('Health Sciences Clinical Excellence Award',
+ 'Faculty', 'Health Sciences', 4500, 3,
+ 'Enrolling in Nursing, Public Health, or Occupational Therapy; demonstrated commitment to community health.',
+ 'Supports future healthcare professionals with $4,500 per year. Recipients complete an additional 40-hour community health placement and are fast-tracked for clinical coordinator roles post-graduation.',
+ '2026-11-01'),
+
+('Kingsford International Student Scholarship',
+ 'International', NULL, 7000, 3,
+ 'International student (student visa); offer of admission to a Kingsford undergraduate degree.',
+ 'Reduces the cost of studying in Australia for high-achieving international students. Valued at $7,000 per year off tuition fees. Recipients must maintain a GPA of 3.0 or above.',
+ '2026-09-30'),
+
+('Women in STEM Scholarship',
+ 'Merit', 'Engineering & Technology', 5000, 3,
+ 'Female or non-binary student enrolling in CS, Software Engineering, Data Science, or Cybersecurity; ATAR 80+.',
+ 'Encouraging diversity in technology. Provides $5,000 per year plus a mentoring relationship with a senior woman in tech from our industry network. Open to domestic and international students.',
+ '2026-10-31');

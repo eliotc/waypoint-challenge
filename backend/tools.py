@@ -17,7 +17,8 @@ log = logging.getLogger(__name__)
 def _get_genai_client() -> genai.Client:
     global _genai_client
     if _genai_client is None:
-        _genai_client = genai.Client(api_key=os.environ["GOOGLE_API_KEY"])
+        # Fallback to ADC (Vertex AI) if API key is not in env
+        _genai_client = genai.Client(api_key=os.environ.get("GOOGLE_API_KEY"))
     return _genai_client
 
 # ── display_data side-channel ─────────────────────────────────────────────────
@@ -316,7 +317,113 @@ def book_campus_tour(
     return data
 
 
-# ── Tool 5: display_data ──────────────────────────────────────────────────────
+# ── Tool 5: search_knowledge ─────────────────────────────────────────────────
+
+def search_knowledge(query: str) -> dict:
+    """
+    Search Kingsford University's general knowledge base for information about
+    admissions, fees, HECS-HELP, scholarships, campus life, facilities,
+    international students, visa requirements, career outcomes, and more.
+    Call this whenever a student asks a general question not covered by
+    search_courses, search_events, or search_scholarships.
+    Returns the most relevant information chunks from the knowledge base.
+    """
+    log.debug("search_knowledge query='%s'", query)
+    emb = _emb_str(_embed(query))
+    sql = """
+        SELECT topic, title, content,
+               1 - (embedding <=> %s::vector) AS similarity
+        FROM knowledge_docs
+        ORDER BY embedding <=> %s::vector
+        LIMIT 3
+    """
+    with _get_conn() as conn:
+        with conn.cursor(cursor_factory=psycopg2.extras.RealDictCursor) as cur:
+            cur.execute(sql, (emb, emb))
+            rows = cur.fetchall()
+
+    chunks = [dict(r) for r in rows]
+    log.info("search_knowledge found %d chunks for '%s'", len(chunks), query)
+
+    if _display_callbacks:
+        payload = {
+            "type": "card",
+            "card_type": "info",
+            "data": {"chunks": chunks, "query": query},
+            "spoken_summary": "Here's some information that might help.",
+        }
+        for loop, callback in _display_callbacks.values():
+            asyncio.run_coroutine_threadsafe(callback(payload), loop)
+
+    # Return a compact summary to the model
+    if chunks:
+        top = chunks[0]
+        return {
+            "topic": top["topic"],
+            "title": top["title"],
+            "excerpt": top["content"][:500],
+            "additional_sections": [c["title"] for c in chunks[1:]],
+        }
+    return {"found": False, "message": "No relevant information found in the knowledge base."}
+
+
+# ── Tool 6: search_scholarships ───────────────────────────────────────────────
+
+def search_scholarships(
+    query: str,
+    scholarship_type: Optional[str] = None,
+) -> dict:
+    """
+    Search Kingsford University scholarships, bursaries, and awards.
+    Use this when a student asks about financial support, scholarships, bursaries,
+    awards, or how to reduce the cost of their degree.
+    query: what the student is looking for (e.g. 'merit scholarship', 'international student funding').
+    scholarship_type: optionally filter by type — 'Merit', 'Equity', 'International', or 'Faculty'.
+    Returns matching scholarships with eligibility, value, and deadline.
+    """
+    log.debug("search_scholarships query='%s' type=%s", query, scholarship_type)
+    emb = _emb_str(_embed(query))
+    sql = """
+        SELECT name, type, faculty, annual_value_aud, duration_years,
+               eligibility, description, application_deadline,
+               1 - (embedding <=> %s::vector) AS similarity
+        FROM scholarships
+        WHERE (%s::text IS NULL OR type ILIKE %s)
+        ORDER BY embedding <=> %s::vector
+        LIMIT 4
+    """
+    with _get_conn() as conn:
+        with conn.cursor(cursor_factory=psycopg2.extras.RealDictCursor) as cur:
+            cur.execute(sql, (
+                emb,
+                scholarship_type, f"%{scholarship_type}%" if scholarship_type else None,
+                emb,
+            ))
+            rows = cur.fetchall()
+
+    scholarships = []
+    for r in rows:
+        d = dict(r)
+        if d.get("application_deadline"):
+            d["application_deadline"] = d["application_deadline"].isoformat()
+        scholarships.append(d)
+    log.info("search_scholarships found %d results for '%s'", len(scholarships), query)
+
+    if _display_callbacks:
+        payload = {
+            "type": "card",
+            "card_type": "scholarships",
+            "data": {"scholarships": scholarships, "count": len(scholarships)},
+            "spoken_summary": "Here are some scholarships you might be eligible for.",
+        }
+        for loop, callback in _display_callbacks.values():
+            asyncio.run_coroutine_threadsafe(callback(payload), loop)
+
+    names = [s["name"] for s in scholarships[:3]]
+    return {"count": len(scholarships), "top_scholarships": names}
+
+
+# ── Tool 7: display_data ──────────────────────────────────────────────────────
 
 def display_data(type: str, data: dict, spoken_summary: str) -> dict:
     """

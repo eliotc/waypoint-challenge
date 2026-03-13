@@ -51,6 +51,23 @@ CREATE TABLE IF NOT EXISTS knowledge_docs (
     embedding vector(1536)
 );
 
+-- ── Scholarships ──────────────────────────────────────────────────────────────
+CREATE TABLE IF NOT EXISTS scholarships (
+    id              SERIAL PRIMARY KEY,
+    name            TEXT NOT NULL,
+    type            TEXT NOT NULL,    -- Merit, Equity, International, Faculty
+    faculty         TEXT,             -- NULL = university-wide
+    annual_value_aud INTEGER NOT NULL,
+    duration_years  INTEGER NOT NULL,
+    eligibility     TEXT NOT NULL,
+    description     TEXT NOT NULL,
+    application_deadline DATE,
+    embedding       vector(1536)
+);
+
+CREATE INDEX IF NOT EXISTS scholarships_embedding_idx
+    ON scholarships USING hnsw (embedding vector_cosine_ops);
+
 -- Indexes for fast vector search
 CREATE INDEX IF NOT EXISTS courses_embedding_idx
     ON courses USING hnsw (embedding vector_cosine_ops);

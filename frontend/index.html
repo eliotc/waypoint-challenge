@@ -641,6 +641,11 @@
       color: #d97706;
     }
 
+    .card-type-bar.scholarship {
+      background: rgba(139, 92, 246, 0.05);
+      color: #7c3aed;
+    }
+
     .card-body {
       padding: 16px;
     }
@@ -799,6 +804,53 @@
       background: rgba(255, 255, 255, 0.25);
     }
 
+    .card-info-content {
+      font-size: 13px;
+      color: var(--color-secondary);
+      line-height: 1.6;
+      margin-top: 8px;
+      white-space: pre-wrap;
+      word-break: break-word;
+    }
+
+    .card-topic-tag {
+      display: inline-block;
+      font-size: 11px;
+      font-weight: 600;
+      padding: 3px 9px;
+      border-radius: var(--radius-rounded);
+      background: rgba(245, 158, 11, 0.08);
+      color: #d97706;
+      border: 1px solid rgba(245, 158, 11, 0.2);
+      margin-bottom: 8px;
+      text-transform: capitalize;
+    }
+
+    .card-schol-value {
+      font-size: 20px;
+      font-weight: 700;
+      color: #7c3aed;
+      margin: 6px 0 4px;
+    }
+
+    .card-schol-value span {
+      font-size: 13px;
+      font-weight: 500;
+      color: var(--color-tertiary);
+    }
+
+    .card-deadline {
+      font-size: 12px;
+      color: var(--color-tertiary);
+      margin-top: 8px;
+      padding-top: 8px;
+      border-top: 1px solid rgba(0, 0, 0, 0.05);
+    }
+
+    .card-deadline strong {
+      color: #d97706;
+    }
+
     .card-group {
       display: none;
     }
@@ -869,7 +921,7 @@
 
     <!-- Right: card sidebar -->
     <div class="sidebar">
-      <div class="sidebar-header">Course &amp; Event Cards</div>
+      <div class="sidebar-header">Clara's Research Panel</div>
       <div class="card-nav" id="cardNav"></div>
       <div class="sidebar-scroll" id="sidebarScroll">
         <div class="no-cards" id="noCards">
@@ -888,7 +940,7 @@
 
   <script>
     // ── Config ────────────────────────────────────────────────────────────────────
-    const WS_URL = `ws://${location.host}/ws/${crypto.randomUUID()}`;
+    const WS_URL = `${location.protocol === 'https:' ? 'wss' : 'ws'}://${location.host}/ws/${crypto.randomUUID()}`;
     const INPUT_RATE = 16000;
     const OUTPUT_RATE = 24000;
 
@@ -1157,6 +1209,20 @@
         count = 1;
         group.appendChild(makeBookingCard(data));
         label = "Booking";
+      } else if (card_type === "scholarships") {
+        const items = data.scholarships || [];
+        count = items.length;
+        items.forEach(s => group.appendChild(makeScholarshipCard(s)));
+        label = "Scholarships";
+      } else if (card_type === "info") {
+        const chunks = data.chunks || [];
+        count = chunks.length || 1;
+        if (chunks.length > 0) {
+          chunks.forEach(chunk => group.appendChild(makeInfoCard(chunk)));
+        } else {
+          group.appendChild(makeInfoCard({ title: "Information", content: msg.spoken_summary || "", topic: "" }));
+        }
+        label = "Info";
       } else {
         count = 1;
         const card = document.createElement("div");
@@ -1184,6 +1250,7 @@
         Events: `<svg class="pill-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><rect x="3" y="4" width="18" height="18" rx="2" ry="2"/><line x1="16" y1="2" x2="16" y2="6"/><line x1="8" y1="2" x2="8" y2="6"/><line x1="3" y1="10" x2="21" y2="10"/></svg>`,
         Booking: `<svg class="pill-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M20 21v-2a4 4 0 0 0-4-4H8a4 4 0 0 0-4 4v2"/><circle cx="12" cy="7" r="4"/></svg>`,
         Info: `<svg class="pill-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="12" cy="12" r="10"/><line x1="12" y1="16" x2="12" y2="12"/><line x1="12" y1="8" x2="12.01" y2="8"/></svg>`,
+        Scholarships: `<svg class="pill-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M12 2l3.09 6.26L22 9.27l-5 4.87 1.18 6.88L12 17.77l-6.18 3.25L7 14.14 2 9.27l6.91-1.01L12 2z"/></svg>`,
       };
       const time = new Date().toLocaleTimeString("en-AU", { hour: "2-digit", minute: "2-digit" });
       const pill = document.createElement("button");
@@ -1255,6 +1322,55 @@
           <div class="card-detail">${esc(d.student_name || "")} · Party of ${d.party_size || 1}<br>
             ${esc(d.preferred_date || "")} · ${esc(d.email || "")}</div>
         </div>`;
+      return card;
+    }
+
+    function makeInfoCard(chunk) {
+      const card = document.createElement("div");
+      card.className = "card";
+      // Strip the leading ## heading line from content (it's already in the title)
+      const rawContent = (chunk.content || "").replace(/^##[^\n]*\n/, "").trim();
+      // Truncate long content for the card — user can see the full answer via Clara's voice
+      const MAX = 400;
+      const preview = rawContent.length > MAX ? rawContent.slice(0, MAX).trimEnd() + "…" : rawContent;
+      const topicLabel = (chunk.topic || "").replace(/-/g, " ");
+      card.innerHTML = `
+    <div class="card-type-bar info">
+      <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="10"/><line x1="12" y1="16" x2="12" y2="12"/><line x1="12" y1="8" x2="12.01" y2="8"/></svg>
+      University Info
+    </div>
+    <div class="card-body">
+      ${topicLabel ? `<div class="card-topic-tag">${esc(topicLabel)}</div>` : ""}
+      <div class="card-title">${esc(chunk.title || "Information")}</div>
+      <div class="card-info-content">${esc(preview)}</div>
+    </div>`;
+      return card;
+    }
+
+    function makeScholarshipCard(s) {
+      const card = document.createElement("div");
+      card.className = "card";
+      const value = s.annual_value_aud ? `$${s.annual_value_aud.toLocaleString()}` : "";
+      const duration = s.duration_years ? `${s.duration_years} yr${s.duration_years > 1 ? "s" : ""}` : "";
+      const facultyTag = s.faculty ? `<span class="tag">${esc(s.faculty)}</span>` : "";
+      const deadline = s.application_deadline
+        ? `<div class="card-deadline">Apply by <strong>${new Date(s.application_deadline).toLocaleDateString("en-AU", { day: "numeric", month: "long", year: "numeric" })}</strong></div>`
+        : `<div class="card-deadline">Rolling applications — no fixed deadline</div>`;
+      card.innerHTML = `
+    <div class="card-type-bar scholarship">
+      <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><path d="M12 2l3.09 6.26L22 9.27l-5 4.87 1.18 6.88L12 17.77l-6.18 3.25L7 14.14 2 9.27l6.91-1.01L12 2z"/></svg>
+      ${esc(s.type || "Scholarship")}
+    </div>
+    <div class="card-body">
+      <div class="card-title">${esc(s.name)}</div>
+      <div class="tags">
+        <span class="tag" style="background:rgba(139,92,246,0.06);color:#7c3aed;border-color:rgba(139,92,246,0.2)">${esc(s.type)}</span>
+        ${facultyTag}
+      </div>
+      <div class="card-schol-value">${value}/yr <span>· ${duration}</span></div>
+      <div class="card-detail">${esc(s.eligibility || "")}</div>
+      ${deadline}
+    </div>`;
       return card;
     }
 
