@@ -58,7 +58,8 @@ def chunk_markdown(path: pathlib.Path) -> list[dict]:
     chunks = []
     for part in parts:
         part = part.strip()
-        if not part:
+        # Only keep ## sections — skip the H1 file header (no real content)
+        if not part or not part.startswith("## "):
             continue
         lines = part.splitlines()
         title = lines[0].lstrip("#").strip() if lines else path.stem

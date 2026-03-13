@@ -70,8 +70,8 @@ def _to_json_safe(row: dict) -> dict:
     for k, v in row.items():
         if isinstance(v, Decimal):
             result[k] = float(v)
-        elif isinstance(v, str) and k in ("career_outcomes", "description") and len(v) > 150:
-            result[k] = v[:150] + "…"
+        elif isinstance(v, str) and k == "description" and len(v) > 300:
+            result[k] = v[:300] + "…"
         else:
             result[k] = v
     return result
@@ -108,7 +108,64 @@ def _get_conn():
         pool.putconn(conn)
 
 
-# ── Tool 1: search_courses ────────────────────────────────────────────────────
+# ── Tool 1: get_course_detail ─────────────────────────────────────────────────
+
+def get_course_detail(course_name: str) -> dict:
+    """
+    Get full details for a specific Kingsford University course by name.
+    Call this when a student asks for more information about a particular course
+    they have already seen or heard about (e.g. 'tell me more about Master of Data Science').
+    Returns complete course info including full description, career outcomes, fees, and ATAR.
+    """
+    log.debug("get_course_detail course_name='%s'", course_name)
+    emb = _emb_str(_embed(course_name))
+    sql = """
+        SELECT code, name, faculty, level, study_mode,
+               duration_years, atar_cutoff, annual_fee_aud,
+               description, career_outcomes,
+               1 - (embedding <=> %s::vector) AS similarity
+        FROM courses
+        ORDER BY embedding <=> %s::vector
+        LIMIT 1
+    """
+    with _get_conn() as conn:
+        with conn.cursor(cursor_factory=psycopg2.extras.RealDictCursor) as cur:
+            cur.execute(sql, (emb, emb))
+            row = cur.fetchone()
+
+    if not row:
+        return {"found": False, "message": f"No course found matching '{course_name}'."}
+
+    from decimal import Decimal
+    course = {}
+    for k, v in dict(row).items():
+        course[k] = float(v) if isinstance(v, Decimal) else v
+
+    log.info("get_course_detail found '%s' (similarity=%.3f)", course["name"], course["similarity"])
+
+    if _display_callbacks:
+        payload = {
+            "type": "card",
+            "card_type": "course_detail",
+            "data": course,
+            "spoken_summary": f"Here are the full details for {course['name']}.",
+        }
+        for loop, callback in _display_callbacks.values():
+            asyncio.run_coroutine_threadsafe(callback(payload), loop)
+
+    return {
+        "name": course["name"],
+        "faculty": course["faculty"],
+        "level": course["level"],
+        "study_mode": course["study_mode"],
+        "duration_years": course["duration_years"],
+        "atar_cutoff": course["atar_cutoff"],
+        "annual_fee_aud": course["annual_fee_aud"],
+        "career_outcomes": course["career_outcomes"],
+    }
+
+
+# ── Tool 2: search_courses ────────────────────────────────────────────────────
 
 def search_courses(query: str, faculty: Optional[str] = None) -> dict:
     """
@@ -268,13 +325,14 @@ def recommend_courses(
 
 def book_campus_tour(
     student_name: str,
-    email: str,
     preferred_date: str,
+    email: str = "",
     party_size: int = 1,
 ) -> dict:
     """
     Book a campus tour at Kingsford University.
     preferred_date: ISO date string, e.g. '2026-03-15'.
+    email: optional — only include if the student has explicitly provided it. Do NOT guess or fabricate.
     party_size: number of people attending (including the student), max 6.
     Returns a booking confirmation with a reference ID.
     """
@@ -305,7 +363,7 @@ def book_campus_tour(
         "party_size": party_size,
         "message": (
             f"Tour booked! Your reference is GT-{row['id']:05d}. "
-            f"A confirmation will be sent to {email}."
+            + (f"A confirmation will be sent to {email}." if email else "")
         ),
     }
 

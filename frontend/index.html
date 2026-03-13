@@ -7,6 +7,7 @@
   <title>Waypoint — Kingsford University</title>
   <link rel="preconnect" href="https://fonts.googleapis.com">
   <link href="https://fonts.googleapis.com/css2?family=Google+Sans:wght@400;500;600&display=swap" rel="stylesheet">
+  <script src="https://cdn.jsdelivr.net/npm/marked/marked.min.js"></script>
   <style>
     *,
     *::before,
@@ -699,6 +700,42 @@
       border-top: 1px solid rgba(0, 0, 0, 0.05);
     }
 
+    .card-detail-grid {
+      display: grid;
+      grid-template-columns: 1fr 1fr;
+      gap: 8px;
+      margin: 12px 0;
+      padding: 12px;
+      background: rgba(0,0,0,0.02);
+      border-radius: 8px;
+      border: 1px solid var(--color-border);
+    }
+    .card-detail-item {
+      display: flex;
+      flex-direction: column;
+      gap: 2px;
+    }
+    .card-detail-label {
+      font-size: 10px;
+      font-weight: 600;
+      text-transform: uppercase;
+      letter-spacing: 0.05em;
+      color: var(--color-tertiary);
+    }
+    .card-detail-val {
+      font-size: 13px;
+      font-weight: 600;
+      color: var(--color-primary);
+    }
+    .card-section-label {
+      font-size: 11px;
+      font-weight: 700;
+      text-transform: uppercase;
+      letter-spacing: 0.06em;
+      color: var(--color-tertiary);
+      margin: 12px 0 4px;
+    }
+
     .card-spots {
       font-size: 13px;
       font-weight: 500;
@@ -809,8 +846,47 @@
       color: var(--color-secondary);
       line-height: 1.6;
       margin-top: 8px;
-      white-space: pre-wrap;
       word-break: break-word;
+    }
+
+    .card-info-md h1, .card-info-md h2, .card-info-md h3 {
+      font-size: 13px;
+      font-weight: 600;
+      color: var(--color-primary);
+      margin: 10px 0 4px;
+    }
+    .card-info-md h1:first-child, .card-info-md h2:first-child, .card-info-md h3:first-child {
+      margin-top: 0;
+    }
+    .card-info-md p { margin: 4px 0; }
+    .card-info-md ul, .card-info-md ol {
+      padding-left: 18px;
+      margin: 4px 0;
+    }
+    .card-info-md li { margin: 2px 0; }
+    .card-info-md table {
+      width: 100%;
+      border-collapse: collapse;
+      font-size: 12px;
+      margin: 6px 0;
+    }
+    .card-info-md th, .card-info-md td {
+      text-align: left;
+      padding: 4px 8px;
+      border-bottom: 1px solid var(--color-border);
+    }
+    .card-info-md th {
+      font-weight: 600;
+      color: var(--color-primary);
+      background: rgba(0,0,0,0.03);
+    }
+    .card-info-md strong { font-weight: 600; color: var(--color-primary); }
+    .card-info-md code {
+      font-family: monospace;
+      font-size: 12px;
+      background: rgba(0,0,0,0.05);
+      padding: 1px 4px;
+      border-radius: 3px;
     }
 
     .card-topic-tag {
@@ -861,6 +937,14 @@
       gap: 12px;
       animation: viaMsgIn 0.3s var(--ease-out-quint);
     }
+
+    .via-msg-img {
+      max-width: 180px;
+      border-radius: 10px;
+      display: block;
+      margin-top: 4px;
+      border: 1px solid rgba(255,255,255,0.3);
+    }
   </style>
 </head>
 
@@ -908,6 +992,13 @@
               d="M17 11c0 2.76-2.24 5-5 5s-5-2.24-5-5H5c0 3.53 2.61 6.43 6 6.92V21h2v-3.08c3.39-.49 6-3.39 6-6.92h-2z" />
           </svg>
         </button>
+        <button class="via-mode-btn" id="cameraBtn" disabled title="Share a photo with Clara">
+          <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+            <path d="M23 19a2 2 0 0 1-2 2H3a2 2 0 0 1-2-2V8a2 2 0 0 1 2-2h4l2-3h6l2 3h4a2 2 0 0 1 2 2z"/>
+            <circle cx="12" cy="13" r="4"/>
+          </svg>
+        </button>
+        <input type="file" id="imageInput" accept="image/*" style="display:none" />
         <input class="via-input" id="textInput" type="text" placeholder="Type a message…" disabled autocomplete="off" />
         <button class="via-send" id="sendBtn" disabled>
           <svg width="16" height="16" viewBox="0 0 24 24" fill="currentColor">
@@ -954,6 +1045,8 @@
 
     // ── DOM ───────────────────────────────────────────────────────────────────────
     const voiceBtn = document.getElementById("voiceBtn");
+    const cameraBtn = document.getElementById("cameraBtn");
+    const imageInput = document.getElementById("imageInput");
     const textInput = document.getElementById("textInput");
     const sendBtn = document.getElementById("sendBtn");
     const messages = document.getElementById("viaMessages");
@@ -978,6 +1071,7 @@
       ws.onopen = () => {
         setStatus("connected", "Connected");
         voiceBtn.disabled = false;
+        cameraBtn.disabled = false;
         textInput.disabled = false;
         sendBtn.disabled = false;
         disconnectBtn.style.display = "block";
@@ -992,7 +1086,7 @@
       ws.onclose = (ev) => {
         const wasClean = ev.wasClean || userInitiatedDisconnect;
         setStatus("", wasClean ? "Session Ended" : "Reconnecting…");
-        voiceBtn.disabled = true; textInput.disabled = true; sendBtn.disabled = true;
+        voiceBtn.disabled = true; cameraBtn.disabled = true; textInput.disabled = true; sendBtn.disabled = true;
         disconnectBtn.style.display = "none";
         voiceBar.classList.remove("via-active");
         stopRecording();
@@ -1195,7 +1289,11 @@
       let label = card_type || "Info";
       let count = 0;
 
-      if (card_type === "courses") {
+      if (card_type === "course_detail") {
+        count = 1;
+        group.appendChild(makeCourseDetailCard(data));
+        label = "Courses";
+      } else if (card_type === "courses") {
         const items = data.courses || data.recommendations || [];
         count = items.length;
         items.forEach(c => group.appendChild(makeCourseCard(c)));
@@ -1276,6 +1374,35 @@
       });
     }
 
+    function makeCourseDetailCard(c) {
+      const card = document.createElement("div");
+      card.className = "card card-detail-view";
+      const atar = c.atar_cutoff ? `ATAR ${c.atar_cutoff}+` : "No ATAR required";
+      const fee = `$${(c.annual_fee_aud || 0).toLocaleString()}/yr`;
+      card.innerHTML = `
+    <div class="card-type-bar course">
+      <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><path d="M2 3h6a4 4 0 0 1 4 4v14a3 3 0 0 0-3-3H2z"/><path d="M22 3h-6a4 4 0 0 0-4 4v14a3 3 0 0 1 3-3h7z"/></svg>
+      Course Detail
+    </div>
+    <div class="card-body">
+      <div class="card-title">${esc(c.name)}</div>
+      <div class="tags">
+        <span class="tag">${esc(c.faculty)}</span>
+        <span class="tag">${esc(c.level)}</span>
+        <span class="tag">${esc(c.study_mode)}</span>
+      </div>
+      <div class="card-detail-grid">
+        <div class="card-detail-item"><span class="card-detail-label">Duration</span><span class="card-detail-val">${c.duration_years} years</span></div>
+        <div class="card-detail-item"><span class="card-detail-label">Annual Fee</span><span class="card-detail-val">${fee}</span></div>
+        <div class="card-detail-item"><span class="card-detail-label">Entry</span><span class="card-detail-val">${atar}</span></div>
+        <div class="card-detail-item"><span class="card-detail-label">Code</span><span class="card-detail-val">${esc(c.code || "")}</span></div>
+      </div>
+      ${c.description ? `<div class="card-section-label">About</div><div class="card-detail">${esc(c.description)}</div>` : ""}
+      ${c.career_outcomes ? `<div class="card-section-label">Career Outcomes</div><div class="card-detail">${esc(c.career_outcomes)}</div>` : ""}
+    </div>`;
+      return card;
+    }
+
     function makeCourseCard(c) {
       const card = document.createElement("div");
       card.className = "card";
@@ -1342,7 +1469,7 @@
     <div class="card-body">
       ${topicLabel ? `<div class="card-topic-tag">${esc(topicLabel)}</div>` : ""}
       <div class="card-title">${esc(chunk.title || "Information")}</div>
-      <div class="card-info-content">${esc(preview)}</div>
+      <div class="card-info-content card-info-md">${marked.parse(preview)}</div>
     </div>`;
       return card;
     }
@@ -1575,6 +1702,42 @@ registerProcessor("uni-audio-processor", AudioProcessor);
       statusDot.className = "via-status-dot" + (cls ? " " + cls : "");
       statusLabel.textContent = label;
     }
+
+    // ── Image upload ──────────────────────────────────────────────────────────────
+    cameraBtn.addEventListener("click", () => imageInput.click());
+
+    imageInput.addEventListener("change", () => {
+      const file = imageInput.files[0];
+      if (!file || ws?.readyState !== WebSocket.OPEN) return;
+      imageInput.value = ""; // reset so same file can be re-sent
+
+      const reader = new FileReader();
+      reader.onload = (e) => {
+        const dataUrl = e.target.result;
+        // dataUrl = "data:<mime>;base64,<data>"
+        const commaIdx = dataUrl.indexOf(",");
+        const mime_type = dataUrl.slice(5, dataUrl.indexOf(";"));
+        const b64 = dataUrl.slice(commaIdx + 1);
+
+        // Show thumbnail as a user message
+        removeEmptyMsg();
+        const wrap = document.createElement("div");
+        wrap.className = "via-msg via-msg-user";
+        const bubble = document.createElement("div");
+        bubble.className = "via-msg-bubble";
+        const img = document.createElement("img");
+        img.src = dataUrl;
+        img.className = "via-msg-img";
+        img.alt = "Shared photo";
+        bubble.appendChild(img);
+        wrap.appendChild(bubble);
+        messages.appendChild(wrap);
+        messages.scrollTop = messages.scrollHeight;
+
+        ws.send(JSON.stringify({ type: "image", data: b64, mime_type }));
+      };
+      reader.readAsDataURL(file);
+    });
 
     // ── Boot ──────────────────────────────────────────────────────────────────────
     connect();

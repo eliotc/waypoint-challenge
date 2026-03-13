@@ -10,6 +10,7 @@ Architecture:
 Browser audio protocol:
   Browser → Server  binary : raw PCM 16-bit LE, 16 000 Hz, mono
   Browser → Server  text   : JSON {"type": "text", "content": "..."}
+                           | JSON {"type": "image", "data": "<base64>", "mime_type": "image/jpeg"}
   Server  → Browser binary : raw PCM audio from model (24 000 Hz)
   Server  → Browser text   : JSON one of:
       {"type": "transcript", "role": "user"|"agent", "text": "..."}
@@ -18,6 +19,7 @@ Browser audio protocol:
       {"type": "error",      "message": "..."}
 """
 import asyncio
+import base64
 import json
 import logging
 import time
@@ -277,6 +279,16 @@ async def websocket_endpoint(websocket: WebSocket, client_id: str):
                             log.info("Text input: %s", msg["content"][:60])
                             live_request_queue.send_content(
                                 types.Content(parts=[types.Part(text=msg["content"])])
+                            )
+                        elif msg.get("type") == "image":
+                            mime_type = msg.get("mime_type", "image/jpeg")
+                            image_bytes = base64.b64decode(msg["data"])
+                            log.info("Image received: %s (%d bytes)", mime_type, len(image_bytes))
+                            live_request_queue.send_content(
+                                types.Content(parts=[
+                                    types.Part(inline_data=types.Blob(data=image_bytes, mime_type=mime_type)),
+                                    types.Part(text="The student has shared an image with you. Describe what you see briefly and, if relevant, relate it to courses or programs at Kingsford University."),
+                                ])
                             )
                         elif msg.get("type") == "audio_stop":
                             log.info("Mic off")

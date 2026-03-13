@@ -1,0 +1,390 @@
+[
+  {
+    "id": "R00",
+    "layer": 2,
+    "description": "Course detail — named course drill-down",
+    "query": "Can you tell me more about the Bachelor of Nursing?",
+    "expected_tool": "get_course_detail"
+  },
+  {
+    "id": "R01",
+    "layer": 2,
+    "description": "Course search — direct field of study",
+    "query": "What computer science courses do you offer?",
+    "expected_tool": "search_courses"
+  },
+  {
+    "id": "R02",
+    "layer": 2,
+    "description": "Course search — program/degree framing",
+    "query": "Do you have any engineering programs I can apply for?",
+    "expected_tool": "search_courses"
+  },
+  {
+    "id": "R03",
+    "layer": 2,
+    "description": "Course search — health faculty",
+    "query": "I'm interested in nursing or allied health — what degrees do you have?",
+    "expected_tool": "search_courses"
+  },
+  {
+    "id": "R04",
+    "layer": 2,
+    "description": "Recommend — interests and strengths both stated",
+    "query": "I love maths and problem solving and I'm strong in physics and logical thinking. What courses would suit me?",
+    "expected_tool": "recommend_courses"
+  },
+  {
+    "id": "R05",
+    "layer": 2,
+    "description": "Recommend — strengths + mode preference",
+    "query": "I'm strong in science and prefer studying online. What would you recommend?",
+    "expected_tool": "recommend_courses"
+  },
+  {
+    "id": "R06",
+    "layer": 2,
+    "description": "Recommend — creative interests with strengths",
+    "query": "I love art and design, and I'm strong at visual communication and drawing. Can you recommend courses for me?",
+    "expected_tool": "recommend_courses"
+  },
+  {
+    "id": "R07",
+    "layer": 2,
+    "description": "Events — general upcoming",
+    "query": "What events are on this month?",
+    "expected_tool": "search_events"
+  },
+  {
+    "id": "R08",
+    "layer": 2,
+    "description": "Events — open day specific",
+    "query": "Is there an open day coming up soon?",
+    "expected_tool": "search_events"
+  },
+  {
+    "id": "R09",
+    "layer": 2,
+    "description": "Events — info session",
+    "query": "Are there any information sessions for international students?",
+    "expected_tool": "search_events"
+  },
+  {
+    "id": "R10",
+    "layer": 2,
+    "description": "Tour booking — with full details",
+    "query": "I'd like to book a campus tour. My name is Alex Smith, email alex@example.com, for 2026-04-12, party of 2.",
+    "expected_tool": "book_campus_tour"
+  },
+  {
+    "id": "R11",
+    "layer": 2,
+    "description": "Knowledge — ATAR admissions",
+    "query": "What ATAR do I need to get into medicine?",
+    "expected_tool": "search_knowledge"
+  },
+  {
+    "id": "R12",
+    "layer": 2,
+    "description": "Knowledge — HECS-HELP fees",
+    "query": "How does HECS-HELP work for domestic students?",
+    "expected_tool": "search_knowledge"
+  },
+  {
+    "id": "R13",
+    "layer": 2,
+    "description": "Knowledge — visa / international",
+    "query": "What student visa do I need to study in Australia?",
+    "expected_tool": "search_knowledge"
+  },
+  {
+    "id": "R14",
+    "layer": 2,
+    "description": "Knowledge — accommodation",
+    "query": "Is there on-campus accommodation available?",
+    "expected_tool": "search_knowledge"
+  },
+  {
+    "id": "R15",
+    "layer": 2,
+    "description": "Knowledge — campus facilities",
+    "query": "What facilities does the campus have?",
+    "expected_tool": "search_knowledge"
+  },
+  {
+    "id": "R16",
+    "layer": 2,
+    "description": "Knowledge — career outcomes",
+    "query": "What are the career prospects for business graduates?",
+    "expected_tool": "search_knowledge"
+  },
+  {
+    "id": "R17",
+    "layer": 2,
+    "description": "Scholarships — general financial support",
+    "query": "Are there any scholarships I can apply for?",
+    "expected_tool": "search_scholarships"
+  },
+  {
+    "id": "R18",
+    "layer": 2,
+    "description": "Scholarships — international student funding",
+    "query": "I'm an international student. Is there any financial help available?",
+    "expected_tool": "search_scholarships"
+  },
+  {
+    "id": "R19",
+    "layer": 2,
+    "description": "Scholarships — merit / high achiever",
+    "query": "What merit scholarships does Kingsford offer for high achievers?",
+    "expected_tool": "search_scholarships"
+  },
+  {
+    "id": "R20",
+    "layer": 2,
+    "description": "Scholarships — equity / hardship",
+    "query": "My family is going through financial hardship. Is there any bursary support?",
+    "expected_tool": "search_scholarships"
+  },
+  {
+    "id": "R21",
+    "layer": 2,
+    "description": "No tool — greeting",
+    "query": "Hi, how are you?",
+    "expected_tool": null
+  },
+  {
+    "id": "R22",
+    "layer": 2,
+    "description": "No tool — thanks/acknowledgement",
+    "query": "Thanks, that's really helpful!",
+    "expected_tool": null
+  },
+  {
+    "id": "R23",
+    "layer": 2,
+    "description": "No tool — what can you do",
+    "query": "What can you help me with?",
+    "expected_tool": null
+  },
+
+  {
+    "id": "MT01",
+    "layer": "2b",
+    "description": "Full counselling journey — search → detail → scholarships → knowledge → events",
+    "turns": [
+      {
+        "user": "I'd like to explore engineering courses.",
+        "expected_tool": "search_courses"
+      },
+      {
+        "user": "Can you give me more information on the Master of Data Science?",
+        "expected_tool": "get_course_detail"
+      },
+      {
+        "user": "Tell me more about scholarships.",
+        "expected_tool": "search_scholarships"
+      },
+      {
+        "user": "I wanted to know more about the university itself — the campus, the school.",
+        "expected_tool": "search_knowledge"
+      },
+      {
+        "user": "Are there any open days, campus tours, or info sessions I could attend in person?",
+        "expected_tool": "search_events"
+      }
+    ]
+  },
+
+  {
+    "id": "MT02",
+    "layer": "2b",
+    "description": "Health pathway — course search → course detail → ATAR knowledge",
+    "turns": [
+      {
+        "user": "What health science programs do you offer?",
+        "expected_tool": "search_courses"
+      },
+      {
+        "user": "Tell me more about the Bachelor of Nursing.",
+        "expected_tool": "get_course_detail"
+      },
+      {
+        "user": "What ATAR score would I need to get in?",
+        "expected_tool": "search_knowledge"
+      },
+      {
+        "user": "Are there any scholarships for health students?",
+        "expected_tool": "search_scholarships"
+      }
+    ]
+  },
+
+  {
+    "id": "MT03",
+    "layer": "2b",
+    "description": "Recommendation → detail → booking — personalised flow ending in tour",
+    "turns": [
+      {
+        "user": "I love maths and problem solving. What degree would suit me?",
+        "expected_tool": "recommend_courses"
+      },
+      {
+        "user": "Can you tell me more about the Bachelor of Computer Science?",
+        "expected_tool": "get_course_detail"
+      },
+      {
+        "user": "How much does it cost and is there HECS-HELP available?",
+        "expected_tool": "search_knowledge"
+      },
+      {
+        "user": "I'd love to come visit the campus. Can I book a tour? My name is Sam Lee and I'm thinking of coming on April 20th.",
+        "expected_tool": "book_campus_tour"
+      }
+    ]
+  },
+
+  {
+    "id": "MT04",
+    "layer": "2b",
+    "description": "Context retention — referencing previously mentioned course without restating name",
+    "turns": [
+      {
+        "user": "What cybersecurity degrees do you have?",
+        "expected_tool": "search_courses"
+      },
+      {
+        "user": "Tell me more about the cybersecurity one.",
+        "expected_tool": "get_course_detail"
+      },
+      {
+        "user": "Thanks, that's helpful! What about scholarships for engineering students?",
+        "expected_tool": "search_scholarships"
+      },
+      {
+        "user": "Are there any upcoming info sessions or open days for the engineering faculty?",
+        "expected_tool": "search_events"
+      }
+    ]
+  },
+
+  {
+    "id": "V01",
+    "layer": 3,
+    "description": "Vision — artwork portfolio → course search journey",
+    "image_description": "A photo of student artwork: oil paintings or digital illustrations",
+    "image_signals": ["artwork", "creative", "design", "portfolio"],
+    "turn_1": {
+      "input": "[image shared]",
+      "expected_clara_behaviour": "Describe the artwork, mention Creative Arts or Design programs at Kingsford, offer to search courses. Must NOT call any tool.",
+      "expected_tool": null,
+      "expected_keywords_in_response": ["art", "creative", "design", "courses"]
+    },
+    "turn_2": {
+      "input": "Yes, show me those creative arts courses",
+      "expected_tool": "search_courses",
+      "expected_cards": "courses",
+      "expected_keywords_in_cards": ["Creative Arts", "Design", "Fine Arts"]
+    }
+  },
+
+  {
+    "id": "V02",
+    "layer": 3,
+    "description": "Vision — merit award certificate → scholarship journey",
+    "image_description": "A photo of an academic award certificate or school dux certificate",
+    "image_signals": ["certificate", "award", "achievement", "merit"],
+    "turn_1": {
+      "input": "[image shared]",
+      "expected_clara_behaviour": "Recognise the academic achievement, mention that merit scholarships may be available, offer to search. Must NOT call any tool.",
+      "expected_tool": null,
+      "expected_keywords_in_response": ["award", "achievement", "scholarship", "merit"]
+    },
+    "turn_2": {
+      "input": "What merit scholarships are available?",
+      "expected_tool": "search_scholarships",
+      "expected_cards": "scholarships",
+      "expected_keywords_in_cards": ["Kingsford Academic Excellence", "Merit", "annual_value_aud"]
+    }
+  },
+
+  {
+    "id": "V03",
+    "layer": 3,
+    "description": "Vision — school report card → admissions/ATAR journey",
+    "image_description": "A photo of a school report card or academic transcript showing grades",
+    "image_signals": ["report", "grades", "transcript", "academic results"],
+    "turn_1": {
+      "input": "[image shared]",
+      "expected_clara_behaviour": "Acknowledge the grades shown, note academic strength (or offer guidance if mixed), mention ATAR relevance and offer to explain admissions requirements. Must NOT call any tool.",
+      "expected_tool": null,
+      "expected_keywords_in_response": ["grades", "ATAR", "admissions", "entry"]
+    },
+    "turn_2": {
+      "input": "What ATAR do I need for law or medicine?",
+      "expected_tool": "search_knowledge",
+      "expected_cards": "info",
+      "expected_keywords_in_cards": ["ATAR", "cutoff", "Law", "Medicine"]
+    }
+  },
+
+  {
+    "id": "V04",
+    "layer": 3,
+    "description": "Vision — clinical/hospital setting → health course journey",
+    "image_description": "A photo inside a hospital ward, clinic, or nursing environment",
+    "image_signals": ["hospital", "clinical", "nursing", "healthcare", "scrubs"],
+    "turn_1": {
+      "input": "[image shared]",
+      "expected_clara_behaviour": "Connect the image to health/nursing/medicine programs at Kingsford, offer to show health courses. Must NOT call any tool.",
+      "expected_tool": null,
+      "expected_keywords_in_response": ["health", "nursing", "medicine", "clinical", "courses"]
+    },
+    "turn_2": {
+      "input": "Yes, what health programs do you have?",
+      "expected_tool": "search_courses",
+      "expected_cards": "courses",
+      "expected_keywords_in_cards": ["Nursing", "Health Sciences", "Medicine"]
+    }
+  },
+
+  {
+    "id": "V05",
+    "layer": 3,
+    "description": "Vision — international student context → visa/support knowledge journey",
+    "image_description": "A passport or photo suggesting overseas origin (flag, international setting)",
+    "image_signals": ["passport", "international", "overseas", "visa"],
+    "turn_1": {
+      "input": "[image shared]",
+      "expected_clara_behaviour": "Recognise international student context, mention Kingsford's support for international students, offer to explain visa or enrolment process. Must NOT call any tool.",
+      "expected_tool": null,
+      "expected_keywords_in_response": ["international", "visa", "support", "overseas"]
+    },
+    "turn_2": {
+      "input": "What visa do I need and what support is available for international students?",
+      "expected_tool": "search_knowledge",
+      "expected_cards": "info",
+      "expected_keywords_in_cards": ["Student Visa", "Subclass 500", "OSHC", "international"]
+    }
+  },
+
+  {
+    "id": "V06",
+    "layer": 3,
+    "description": "Vision — campus building photo → campus tour booking journey",
+    "image_description": "A photo of a university campus building, quad, or outdoor campus area",
+    "image_signals": ["campus", "building", "university", "grounds"],
+    "turn_1": {
+      "input": "[image shared]",
+      "expected_clara_behaviour": "Recognise campus interest, invite the student to visit Kingsford, mention open days or campus tours. Must NOT call any tool.",
+      "expected_tool": null,
+      "expected_keywords_in_response": ["campus", "visit", "tour", "open day"]
+    },
+    "turn_2": {
+      "input": "I'd love to visit. Can I book a tour for two people next Saturday?",
+      "expected_tool": "book_campus_tour",
+      "expected_cards": "booking",
+      "expected_keywords_in_cards": ["booking_id", "party_size", "preferred_date"]
+    }
+  }
+]
