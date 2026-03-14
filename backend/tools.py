@@ -100,12 +100,26 @@ from contextlib import contextmanager
 @contextmanager
 def _get_conn():
     pool = _get_pg_pool()
-    conn = pool.getconn()
+    conn = None
     try:
+        conn = pool.getconn()
+        # Basic validation: check if connection is still alive
+        # poll() returns None if everything is okay
+        try:
+            conn.poll()
+        except (psycopg2.OperationalError, psycopg2.InterfaceError):
+            log.warning("Database connection stale, attempting to refresh...")
+            pool.putconn(conn, close=True)
+            conn = pool.getconn()
+
         conn.autocommit = True
         yield conn
+    except Exception as e:
+        log.error("Database connection error: %s", e)
+        raise
     finally:
-        pool.putconn(conn)
+        if conn:
+            pool.putconn(conn)
 
 
 # ── Tool 1: get_course_detail ─────────────────────────────────────────────────

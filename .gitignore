@@ -13,3 +13,4 @@ HACKATHON_PLAN.md
 
 # Agent memory (local context, not committed)
 .memory/
+.claude/settings.local.json

@@ -76,6 +76,33 @@ International students must hold **Overseas Student Health Cover (OSHC)** for th
 ## Post-Study Pathways
 After graduating, international students may be eligible for a **Temporary Graduate visa (subclass 485)**, allowing 2–6 years of work in Australia depending on their qualification and study location. Engineering, Health Sciences, and regional study may attract additional points for permanent residency pathways. Consult a registered migration agent for personalised advice — Kingsford's International Centre can provide referrals.
 
+## The International Centre
+
+The **International Centre** is Kingsford's dedicated hub for global students, located on **Level G of the Student Centre** — the glass-fronted building at the heart of the main campus, directly opposite the South Lawn.
+
+### What's inside
+- **Welcome Lounge**: A large open lounge with comfortable seating, international newspapers, and a rotating display of student artwork from around the world. This is where new students come on their first day.
+- **Adviser Rooms**: Private meeting rooms for one-on-one consultations with International Student Advisers on visa conditions, enrolment, and wellbeing.
+- **Document Certification Desk**: Certified copies of passports, transcripts, and visa documents for enrolment and rental applications.
+- **Prayer and Reflection Room**: A quiet, non-denominational space on the ground floor, open 7am–9pm daily.
+- **Noticeboards**: Weekly listings of housing, part-time jobs, language exchange partners, and community events.
+
+### Regular programs and events hosted here
+| Program | When | What it covers |
+|---------|------|----------------|
+| **First Steps in Australia** workshop | Week 1 of each semester | Banking, TFN, Opal card, mobile SIM, Medicare/OSHC |
+| **Visa Clinic** | Every Tuesday 10am–12pm | Drop-in Q&A with a registered migration agent |
+| **Cultural Kitchen** | Last Friday of each month | International students cook and share food from their home countries |
+| **English Conversation Club** | Wednesdays 1–2pm | Informal English practice with domestic student volunteers |
+| **International Welcome Ceremony** | First day of O-Week | Official welcome from the Vice-Chancellor, cultural performances, campus tour |
+| **Pre-departure Briefing** (graduating students) | November each year | Tax, superannuation, subclass 485 visa, reference letters |
+
+### Airport Pickup and Arrival
+The International Centre coordinates the **Airport Pickup Service** for students arriving in January and February. A Kingsford staff member or volunteer meets you at the international terminal with a welcome sign and drives you to campus or your accommodation. Cost: $80, bookable through the International Centre portal.
+
+### Peer Mentor drop-in
+Trained Peer Mentors (current international students in their second year or above) hold drop-in sessions in the Welcome Lounge every Monday and Thursday 11am–1pm. They can answer practical questions that advisers can't — like the best cheap grocery stores nearby, how to open a bank account without a fixed address, or which buses run late at night.
+
 ## Contact
 - **International Centre**: Level G, Student Centre | international@kingsford.edu.au | +61 3 9555 0300
 - **Open**: Monday–Friday 9am–5pm AEST

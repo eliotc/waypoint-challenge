@@ -1051,6 +1051,85 @@
       margin-top: 4px;
       border: 1px solid rgba(255, 255, 255, 0.3);
     }
+
+    /* Media Menu */
+    .via-media-wrap {
+      position: relative;
+    }
+
+    .via-media-menu {
+      position: absolute;
+      bottom: 50px;
+      left: 0;
+      background: white;
+      border: 1px solid var(--border-secondary);
+      border-radius: 12px;
+      box-shadow: 0 4px 20px rgba(0, 0, 0, 0.15);
+      width: 160px;
+      display: none;
+      flex-direction: column;
+      overflow: hidden;
+      z-index: 100;
+    }
+
+    .via-media-menu.show {
+      display: flex;
+    }
+
+    .via-media-menu button {
+      padding: 12px 16px;
+      border: none;
+      background: none;
+      text-align: left;
+      font-size: 13px;
+      cursor: pointer;
+      display: flex;
+      align-items: center;
+      gap: 10px;
+      color: var(--color-primary);
+      transition: background 0.2s;
+    }
+
+    .via-media-menu button:hover {
+      background: var(--bg-secondary);
+    }
+
+    /* Screen Share Status */
+    .screen-share-status {
+      display: flex;
+      align-items: center;
+      gap: 10px;
+      background: #fffbeb;
+      border-bottom: 1px solid #fde68a;
+      padding: 8px 16px;
+      animation: viaMsgIn 0.3s var(--ease-out-quint);
+    }
+
+    .screen-share-dot {
+      width: 8px;
+      height: 8px;
+      border-radius: 50%;
+      background: #f59e0b;
+      animation: viaListenPulse 1s infinite;
+    }
+
+    .screen-share-label {
+      font-size: 12px;
+      font-weight: 500;
+      color: #92400e;
+      flex: 1;
+    }
+
+    .stop-screen-btn {
+      padding: 4px 10px;
+      font-size: 11px;
+      font-weight: 600;
+      color: #991b1b;
+      background: #fee2e2;
+      border: 1px solid #fecaca;
+      border-radius: 6px;
+      cursor: pointer;
+    }
   </style>
 </head>
 
@@ -1069,12 +1148,20 @@
           <h3 class="via-name">Clara</h3>
           <p class="via-subtitle" id="viaSubtitle">Waypoint · Kingsford University</p>
         </div>
+
         <div class="via-status">
           <div class="via-status-dot" id="statusDot"></div>
           <span id="statusLabel">Connecting…</span>
           <button class="via-disconnect" id="disconnectBtn" style="display:none"
             title="End session and close connection">End Session</button>
         </div>
+      </div>
+
+      <!-- Floating Screen Share Indicator -->
+      <div id="screen-share-status" class="screen-share-status" style="display:none">
+        <span class="screen-share-dot"></span>
+        <span class="screen-share-label">Sharing Screen</span>
+        <button id="stop-screen-btn" class="stop-screen-btn">Stop Sharing</button>
       </div>
 
       <div class="via-voice-bar" id="viaVoiceBar">
@@ -1098,13 +1185,29 @@
               d="M17 11c0 2.76-2.24 5-5 5s-5-2.24-5-5H5c0 3.53 2.61 6.43 6 6.92V21h2v-3.08c3.39-.49 6-3.39 6-6.92h-2z" />
           </svg>
         </button>
-        <button class="via-mode-btn" id="cameraBtn" disabled title="Share a photo with Clara">
-          <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"
-            stroke-linecap="round" stroke-linejoin="round">
-            <path d="M23 19a2 2 0 0 1-2 2H3a2 2 0 0 1-2-2V8a2 2 0 0 1 2-2h4l2-3h6l2 3h4a2 2 0 0 1 2 2z" />
-            <circle cx="12" cy="13" r="4" />
-          </svg>
-        </button>
+        <div class="via-media-wrap">
+          <button class="via-mode-btn" id="mediaBtn" disabled title="Share media">
+            <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"
+              stroke-linecap="round" stroke-linejoin="round">
+              <path d="M23 19a2 2 0 0 1-2 2H3a2 2 0 0 1-2-2V8a2 2 0 0 1 2-2h4l2-3h6l2 3h4a2 2 0 0 1 2 2z" />
+              <circle cx="12" cy="13" r="4" />
+            </svg>
+          </button>
+          <div id="mediaMenu" class="via-media-menu">
+            <button id="optUpload"><svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor"
+                stroke-width="2">
+                <path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4" />
+                <polyline points="17 8 12 3 7 8" />
+                <line x1="12" y1="3" x2="12" y2="15" />
+              </svg> Upload Image</button>
+            <button id="optScreen"><svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor"
+                stroke-width="2">
+                <rect x="2" y="3" width="20" height="14" rx="2" ry="2" />
+                <line x1="8" y1="21" x2="16" y2="21" />
+                <line x1="12" y1="17" x2="12" y2="21" />
+              </svg> Share Screen</button>
+          </div>
+        </div>
         <input type="file" id="imageInput" accept="image/*" style="display:none" />
         <input class="via-input" id="textInput" type="text" placeholder="Type a message…" disabled autocomplete="off" />
         <button class="via-send" id="sendBtn" disabled>
@@ -1152,10 +1255,16 @@
     let agentMsgEl = null, agentSpeaking = false;
     let userMsgEl = null;
     let analyser = null, dataArray = null, animationId = null; // Volume Meter state
+    let screenStream = null, screenInterval = null, isSharingScreen = false;
 
     // ── DOM ───────────────────────────────────────────────────────────────────────
     const voiceBtn = document.getElementById("voiceBtn");
-    const cameraBtn = document.getElementById("cameraBtn");
+    const mediaBtn = document.getElementById("mediaBtn");
+    const mediaMenu = document.getElementById("mediaMenu");
+    const optUpload = document.getElementById("optUpload");
+    const optScreen = document.getElementById("optScreen");
+    const stopScreenBtn = document.getElementById("stop-screen-btn");
+    const screenShareStatus = document.getElementById("screen-share-status");
     const imageInput = document.getElementById("imageInput");
     const textInput = document.getElementById("textInput");
     const sendBtn = document.getElementById("sendBtn");
@@ -1181,7 +1290,7 @@
       ws.onopen = () => {
         setStatus("connected", "Connected");
         voiceBtn.disabled = false;
-        cameraBtn.disabled = false;
+        mediaBtn.disabled = false;
         textInput.disabled = false;
         sendBtn.disabled = false;
         disconnectBtn.style.display = "block";
@@ -1196,9 +1305,10 @@
       ws.onclose = (ev) => {
         const wasClean = ev.wasClean || userInitiatedDisconnect;
         setStatus("", wasClean ? "Session Ended" : "Reconnecting…");
-        voiceBtn.disabled = true; cameraBtn.disabled = true; textInput.disabled = true; sendBtn.disabled = true;
+        voiceBtn.disabled = true; mediaBtn.disabled = true; textInput.disabled = true; sendBtn.disabled = true;
         disconnectBtn.style.display = "none";
         voiceBar.classList.remove("via-active");
+        stopScreenSharing();
         stopRecording();
         if (!wasClean) {
           setTimeout(connect, 3000);
@@ -1770,6 +1880,8 @@ registerProcessor("uni-audio-processor", AudioProcessor);
           audioCtxOut = null;
           nextPlayTime = 0;
         }
+        // Focus text input when switching to Text Mode
+        setTimeout(() => textInput.focus(), 10);
       } else {
         voiceBtn.title = "Switch to Text Mode";
         voiceBtn.innerHTML = `
@@ -1817,6 +1929,29 @@ registerProcessor("uni-audio-processor", AudioProcessor);
       else toggleMute();
     });
 
+    // ── Media Menu ──────────────────────────────────────────────────────────────
+    mediaBtn.onclick = (e) => {
+      e.stopPropagation();
+      mediaMenu.classList.toggle("show");
+    };
+
+    optUpload.onclick = () => {
+      mediaMenu.classList.remove("show");
+      imageInput.click();
+    };
+
+    optScreen.onclick = () => {
+      mediaMenu.classList.remove("show");
+      if (isSharingScreen) stopScreenSharing();
+      else startScreenSharing();
+    };
+
+    stopScreenBtn.onclick = stopScreenSharing;
+
+    document.addEventListener("click", () => {
+      mediaMenu.classList.remove("show");
+    });
+
     disconnectBtn.addEventListener("click", () => {
       userInitiatedDisconnect = true;
       ws?.close();
@@ -1840,7 +1975,6 @@ registerProcessor("uni-audio-processor", AudioProcessor);
     }
 
     // ── Image upload ──────────────────────────────────────────────────────────────
-    cameraBtn.addEventListener("click", () => imageInput.click());
 
     imageInput.addEventListener("change", () => {
       const file = imageInput.files[0];
@@ -1930,6 +2064,68 @@ registerProcessor("uni-audio-processor", AudioProcessor);
       document.addEventListener("touchmove", e => { if (dragging) { onDrag(e.touches[0].clientX, e.touches[0].clientY); e.preventDefault(); } }, { passive: false });
       document.addEventListener("touchend", stopDrag);
     })();
+
+    // ── Screen Sharing ──────────────────────────────────────────────────────────
+    async function startScreenSharing() {
+      try {
+        screenStream = await navigator.mediaDevices.getDisplayMedia({
+          video: { frameRate: 5 },
+          audio: false
+        });
+
+        isSharingScreen = true;
+        screenShareStatus.style.display = "flex";
+
+        // Hidden canvas for frame extraction
+        const canvas = document.createElement("canvas");
+        const context = canvas.getContext("2d");
+        const video = document.createElement("video");
+        video.srcObject = screenStream;
+        video.play();
+
+        // Capture a frame every 3 seconds
+        screenInterval = setInterval(() => {
+          if (!ws || ws.readyState !== WebSocket.OPEN || !isSharingScreen) return;
+
+          if (video.videoWidth > 0 && video.videoHeight > 0) {
+            // Downscale to reasonable size (max 1024px)
+            const scale = Math.min(1, 1024 / Math.max(video.videoWidth, video.videoHeight));
+            canvas.width = video.videoWidth * scale;
+            canvas.height = video.videoHeight * scale;
+            context.drawImage(video, 0, 0, canvas.width, canvas.height);
+
+            const base64Image = canvas.toDataURL("image/jpeg", 0.6).split(",")[1];
+            ws.send(JSON.stringify({
+              type: "screen_frame",
+              data: base64Image,
+              mime_type: "image/jpeg"
+            }));
+          }
+        }, 3000);
+
+        screenStream.getVideoTracks()[0].onended = () => {
+          stopScreenSharing();
+        };
+
+      } catch (err) {
+        console.error("Error sharing screen:", err);
+        stopScreenSharing();
+      }
+    }
+
+    function stopScreenSharing() {
+      isSharingScreen = false;
+      screenShareStatus.style.display = "none";
+      if (screenInterval) {
+        clearInterval(screenInterval);
+        screenInterval = null;
+      }
+      if (screenStream) {
+        screenStream.getTracks().forEach(track => track.stop());
+        screenStream = null;
+      }
+    }
+
 
     // ── Boot ──────────────────────────────────────────────────────────────────────
     connect();

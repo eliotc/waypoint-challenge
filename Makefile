@@ -1,8 +1,9 @@
-PROJECT   := waypoint-hackathon
-REGION    := us-central1
-INSTANCE  := waypoint-hackathon:us-central1:waypoint-db
-DB_NAME   := waypoint
-PROXY_PORT := 5433
+# Override these via environment variables or a local .env.local file
+PROJECT    ?= your-gcp-project-id
+REGION     ?= us-central1
+INSTANCE   ?= your-project:us-central1:your-db-instance
+DB_NAME    ?= waypoint
+PROXY_PORT ?= 5433
 
 # ── Local dev ────────────────────────────────────────────────────────────────
 

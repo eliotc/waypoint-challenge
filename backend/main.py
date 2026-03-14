@@ -290,6 +290,16 @@ async def websocket_endpoint(websocket: WebSocket, client_id: str):
                                     types.Part(text="The student has shared an image with you. Describe what you see briefly and, if relevant, relate it to courses or programs at Kingsford University."),
                                 ])
                             )
+                        elif msg.get("type") == "screen_frame":
+                            mime_type = msg.get("mime_type", "image/jpeg")
+                            image_bytes = base64.b64decode(msg["data"])
+                            # Passive frame: send only the blob, NO prompt.
+                            # Keeps Clara from spamming descriptions of the live stream.
+                            live_request_queue.send_content(
+                                types.Content(parts=[
+                                    types.Part(inline_data=types.Blob(data=image_bytes, mime_type=mime_type))
+                                ])
+                            )
                         elif msg.get("type") == "audio_stop":
                             log.info("Mic off")
             except (WebSocketDisconnect, RuntimeError):
