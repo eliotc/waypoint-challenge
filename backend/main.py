@@ -39,6 +39,7 @@ sys.path.insert(0, str(pathlib.Path(__file__).parent))
 from collections import defaultdict
 from fastapi import FastAPI, WebSocket, WebSocketDisconnect
 from fastapi.responses import FileResponse
+from fastapi.staticfiles import StaticFiles
 from fastapi.middleware.cors import CORSMiddleware
 
 import google.genai.types as types
@@ -135,6 +136,8 @@ app.add_middleware(
     allow_methods=["*"],
     allow_headers=["*"],
 )
+
+app.mount("/assets", StaticFiles(directory=STATIC_DIR / "assets"), name="assets")
 
 # ── Rate limiting ─────────────────────────────────────────────────────────────
 # Simple in-memory per-IP limiter: max 2 concurrent WS connections, max 20/hour.
@@ -293,8 +296,9 @@ async def websocket_endpoint(websocket: WebSocket, client_id: str):
                         elif msg.get("type") == "screen_frame":
                             mime_type = msg.get("mime_type", "image/jpeg")
                             image_bytes = base64.b64decode(msg["data"])
-                            # Passive frame: send only the blob, NO prompt.
-                            # Keeps Clara from spamming descriptions of the live stream.
+                            log.info("Screen frame received: %d bytes — injecting as visual context", len(image_bytes))
+                            # Passive context: frame arrives just before user audio each turn.
+                            # No text prompt — the user's spoken question provides the intent.
                             live_request_queue.send_content(
                                 types.Content(parts=[
                                     types.Part(inline_data=types.Blob(data=image_bytes, mime_type=mime_type))

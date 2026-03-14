@@ -12,7 +12,8 @@ flowchart TD
         SPK["🔊 Speaker\nAudioContext\nPCM playback"]
         TXS["💬 Transcript panel\nStreaming user + agent text"]
         CARDS["📋 Research Panel\nCourse · Event · Scholarship\nKnowledge · Booking cards"]
-        VIS["📷 Vision input\nImage / camera frame\nsent alongside audio"]
+        VIS["📷 Image upload\nCamera / file photo\nsent as one-shot frame"]
+        SCR["🖥️ Screen sharing\ngetDisplayMedia capture\none frame per user turn\n(VAD-gated, on speech only)"]
     end
 
     subgraph CloudRun["☁️ Google Cloud Run  —  FastAPI + Uvicorn"]
@@ -34,6 +35,7 @@ flowchart TD
     %% Audio path (user → Gemini)
     MIC -- "PCM audio\n16kHz frames" --> WS
     VIS -- "image/jpeg\nbase64 frame" --> WS
+    SCR -- "image/jpeg\none frame on speech\n(VAD-gated)" --> WS
     WS --> RUNNER
     RUNNER --> QUEUE
     QUEUE -- "Gemini Live\nBIDI WebSocket" --> GEMINI
@@ -66,7 +68,7 @@ flowchart TD
     classDef gcp fill:#3b2a1a,stroke:#f59e0b,color:#e2e8f0
     classDef gemini fill:#4a1d6b,stroke:#a855f7,color:#e2e8f0
 
-    class MIC,SPK,TXS,CARDS,VIS browser
+    class MIC,SPK,TXS,CARDS,VIS,SCR browser
     class WS,RUNNER,QUEUE,TOOLS cloudrun
     class DB,SM,AR,CB gcp
     class GEMINI gemini
@@ -82,5 +84,6 @@ flowchart TD
 | **Audio out** | Gemini streams PCM back → ADK Runner → WebSocket → Browser AudioContext plays in real time |
 | **Tool execution** | Gemini emits `function_call` → ADK Routes to correct tool → Tool queries Cloud SQL via pgvector → Result returned to Gemini |
 | **Card side-channel** | Tools call `display_data` → JSON sent directly over WebSocket → Browser renders structured card without waiting for Clara to finish speaking |
-| **Vision input** | Browser captures image frame → sent as `image/jpeg` blob alongside audio via LiveRequestQueue → Gemini processes multimodally |
+| **Image upload** | User selects photo (camera/file) → sent as `image/jpeg` blob via LiveRequestQueue → Gemini processes image + responds multimodally |
+| **Screen sharing** | `getDisplayMedia()` captures live screen → one frame captured per user turn, gated by VAD amplitude threshold → sent just before audio so Gemini sees current screen context when answering |
 | **CI/CD** | `git push` → Cloud Build triggers → Docker image pushed to Artifact Registry → Cloud Run deploys new revision |
