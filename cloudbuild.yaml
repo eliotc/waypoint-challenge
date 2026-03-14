@@ -31,7 +31,7 @@ steps:
       - --memory=1Gi
       - --concurrency=10
       - --max-instances=2
-      - --min-instances=0
+      - --min-instances=1
 
 images:
   - '${_REGION}-docker.pkg.dev/$PROJECT_ID/${_AR_REPO}/${_SERVICE}:$COMMIT_SHA'
