@@ -45,14 +45,18 @@
 
     /* ── Full-page layout ── */
     .app {
-      display: grid;
-      grid-template-columns: 460px 1fr;
+      display: flex;
+      flex-direction: row;
       height: 100vh;
-      gap: 0;
+      overflow: hidden;
     }
 
     /* ── Left: agent panel (VoZara style) ── */
     .via-panel {
+      width: 460px;
+      min-width: 280px;
+      max-width: 75%;
+      flex-shrink: 0;
       background: var(--bg-primary);
       box-shadow: 0 0 0 1px var(--border-primary), 12px 0 40px rgba(0, 0, 0, 0.06);
       display: flex;
@@ -60,6 +64,80 @@
       overflow: hidden;
       position: relative;
       z-index: 10;
+    }
+
+    /* ── Resize handle (Slider style) ── */
+    .resize-handle {
+      width: 16px;
+      flex-shrink: 0;
+      background: var(--bg-primary);
+      cursor: col-resize;
+      position: relative;
+      z-index: 20;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      border-left: 1px solid var(--border-primary);
+      border-right: 1px solid var(--border-primary);
+      transition: background 0.2s, border-color 0.2s, width 0.2s;
+    }
+
+    .resize-handle::before {
+      content: '';
+      width: 4px;
+      height: 40px;
+      background: var(--border-secondary);
+      border-radius: 2px;
+      transition: all 0.2s ease;
+    }
+
+    .resize-handle:hover,
+    .resize-handle.dragging {
+      background: var(--accent-teal-light);
+      border-color: var(--accent-teal);
+      width: 18px;
+    }
+
+    .resize-handle:hover::before,
+    .resize-handle.dragging::before {
+      background: var(--accent-teal);
+      height: 64px;
+      width: 6px;
+    }
+
+    /* ── Responsive: stack vertically on narrow screens ── */
+    @media (max-width: 767px) {
+      .app {
+        flex-direction: column;
+      }
+
+      .resize-handle {
+        width: 100% !important;
+        height: 14px;
+        cursor: row-resize;
+        align-items: center;
+        justify-content: center;
+      }
+
+      .resize-handle::before {
+        width: 60px;
+        height: 4px;
+      }
+
+      .via-panel {
+        width: 100% !important;
+        min-width: unset;
+        max-width: unset;
+        height: 55vh;
+        min-height: 200px;
+        max-height: 80vh;
+      }
+
+      .sidebar {
+        height: auto !important;
+        flex: 1;
+        min-height: 160px;
+      }
     }
 
     /* Header */
@@ -534,6 +612,8 @@
 
     /* ── Right: card sidebar ── */
     .sidebar {
+      flex: 1;
+      min-width: 240px;
       display: flex;
       flex-direction: column;
       background: #f8fafc;
@@ -706,15 +786,17 @@
       gap: 8px;
       margin: 12px 0;
       padding: 12px;
-      background: rgba(0,0,0,0.02);
+      background: rgba(0, 0, 0, 0.02);
       border-radius: 8px;
       border: 1px solid var(--color-border);
     }
+
     .card-detail-item {
       display: flex;
       flex-direction: column;
       gap: 2px;
     }
+
     .card-detail-label {
       font-size: 10px;
       font-weight: 600;
@@ -722,11 +804,13 @@
       letter-spacing: 0.05em;
       color: var(--color-tertiary);
     }
+
     .card-detail-val {
       font-size: 13px;
       font-weight: 600;
       color: var(--color-primary);
     }
+
     .card-section-label {
       font-size: 11px;
       font-weight: 700;
@@ -849,42 +933,64 @@
       word-break: break-word;
     }
 
-    .card-info-md h1, .card-info-md h2, .card-info-md h3 {
+    .card-info-md h1,
+    .card-info-md h2,
+    .card-info-md h3 {
       font-size: 13px;
       font-weight: 600;
       color: var(--color-primary);
       margin: 10px 0 4px;
     }
-    .card-info-md h1:first-child, .card-info-md h2:first-child, .card-info-md h3:first-child {
+
+    .card-info-md h1:first-child,
+    .card-info-md h2:first-child,
+    .card-info-md h3:first-child {
       margin-top: 0;
     }
-    .card-info-md p { margin: 4px 0; }
-    .card-info-md ul, .card-info-md ol {
+
+    .card-info-md p {
+      margin: 4px 0;
+    }
+
+    .card-info-md ul,
+    .card-info-md ol {
       padding-left: 18px;
       margin: 4px 0;
     }
-    .card-info-md li { margin: 2px 0; }
+
+    .card-info-md li {
+      margin: 2px 0;
+    }
+
     .card-info-md table {
       width: 100%;
       border-collapse: collapse;
       font-size: 12px;
       margin: 6px 0;
     }
-    .card-info-md th, .card-info-md td {
+
+    .card-info-md th,
+    .card-info-md td {
       text-align: left;
       padding: 4px 8px;
       border-bottom: 1px solid var(--color-border);
     }
+
     .card-info-md th {
       font-weight: 600;
       color: var(--color-primary);
-      background: rgba(0,0,0,0.03);
+      background: rgba(0, 0, 0, 0.03);
     }
-    .card-info-md strong { font-weight: 600; color: var(--color-primary); }
+
+    .card-info-md strong {
+      font-weight: 600;
+      color: var(--color-primary);
+    }
+
     .card-info-md code {
       font-family: monospace;
       font-size: 12px;
-      background: rgba(0,0,0,0.05);
+      background: rgba(0, 0, 0, 0.05);
       padding: 1px 4px;
       border-radius: 3px;
     }
@@ -943,7 +1049,7 @@
       border-radius: 10px;
       display: block;
       margin-top: 4px;
-      border: 1px solid rgba(255,255,255,0.3);
+      border: 1px solid rgba(255, 255, 255, 0.3);
     }
   </style>
 </head>
@@ -993,9 +1099,10 @@
           </svg>
         </button>
         <button class="via-mode-btn" id="cameraBtn" disabled title="Share a photo with Clara">
-          <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
-            <path d="M23 19a2 2 0 0 1-2 2H3a2 2 0 0 1-2-2V8a2 2 0 0 1 2-2h4l2-3h6l2 3h4a2 2 0 0 1 2 2z"/>
-            <circle cx="12" cy="13" r="4"/>
+          <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"
+            stroke-linecap="round" stroke-linejoin="round">
+            <path d="M23 19a2 2 0 0 1-2 2H3a2 2 0 0 1-2-2V8a2 2 0 0 1 2-2h4l2-3h6l2 3h4a2 2 0 0 1 2 2z" />
+            <circle cx="12" cy="13" r="4" />
           </svg>
         </button>
         <input type="file" id="imageInput" accept="image/*" style="display:none" />
@@ -1009,6 +1116,9 @@
 
       <div class="via-powered"><strong>Waypoint</strong> · Powered by Google ADK</div>
     </div>
+
+    <!-- Resize handle -->
+    <div class="resize-handle" id="resizeHandle" title="Drag to resize panels"></div>
 
     <!-- Right: card sidebar -->
     <div class="sidebar">
@@ -1099,7 +1209,7 @@
 
       ws.onmessage = (ev) => {
         if (ev.data instanceof ArrayBuffer) {
-          playPCM(ev.data);
+          if (!muted) playPCM(ev.data);
         } else {
           handleMessage(JSON.parse(ev.data));
         }
@@ -1221,16 +1331,22 @@
       agentSpeaking = speaking;
       if (speaking) {
         voiceBar.classList.add("via-active");
-        voiceBar.classList.remove("via-muted");
-        wave.classList.add("via-wave-active");
-        voiceLabel.textContent = "Clara is speaking…";
         avatar.classList.add("via-speaking");
         avatarRing.classList.remove("via-listening");
+        if (muted) {
+          voiceBar.classList.add("via-muted");
+          wave.classList.remove("via-wave-active");
+          voiceLabel.textContent = "Muted (text only)";
+        } else {
+          voiceBar.classList.remove("via-muted");
+          wave.classList.add("via-wave-active");
+          voiceLabel.textContent = "Clara is speaking…";
+        }
       } else {
         avatar.classList.remove("via-speaking");
         if (recording) {
           if (muted) {
-            voiceLabel.textContent = "Muted";
+            voiceLabel.textContent = "Muted (text only)";
             voiceBar.classList.add("via-muted");
             avatarRing.classList.remove("via-listening");
             wave.classList.remove("via-wave-active");
@@ -1252,7 +1368,7 @@
         voiceBar.classList.add("via-active");
         if (muted) {
           voiceBar.classList.add("via-muted");
-          voiceLabel.textContent = "Muted";
+          voiceLabel.textContent = "Muted (text only)";
           avatarRing.classList.remove("via-listening");
           wave.classList.remove("via-wave-active");
         } else {
@@ -1632,23 +1748,43 @@ registerProcessor("uni-audio-processor", AudioProcessor);
     }
 
     function toggleMute() {
-      if (!recording) return;
       muted = !muted;
       voiceBtn.classList.toggle("via-muted", muted);
-      voiceBtn.title = muted ? "Unmute microphone" : "Mute microphone";
+
       if (muted) {
-        voiceLabel.textContent = "Muted";
+        voiceBtn.title = "Switch to Voice Mode";
+        voiceBtn.innerHTML = `
+          <svg width="20" height="20" viewBox="0 0 24 24" fill="currentColor">
+            <path d="M16.5 12c0-1.77-1.02-3.29-2.5-4.03v2.21l2.45 2.45c.03-.2.05-.41.05-.63zm2.5 0c0 .94-.2 1.82-.54 2.64l1.51 1.51C20.63 14.91 21 13.5 21 12c0-4.28-2.99-7.86-7-8.77v2.06c2.89.86 5 3.54 5 6.71zM4.27 3L3 4.27 7.73 9H3v6h4l5 5v-6.73l4.25 4.25c-.67.52-1.42.93-2.25 1.18v2.06c1.38-.31 2.63-.95 3.69-1.81L19.73 21 21 19.73l-9-9L4.27 3zM12 4L9.91 6.09 12 8.18V4z" />
+          </svg>
+        `;
+        voiceLabel.textContent = "Text Mode — muted";
         voiceBar.classList.add("via-muted");
         avatarRing.classList.remove("via-listening");
         wave.classList.remove("via-wave-active");
         cancelAnimationFrame(animationId);
         flattenWave();
+        // Stop Clara's current audio output immediately
+        if (audioCtxOut && audioCtxOut.state !== "closed") {
+          audioCtxOut.close();
+          audioCtxOut = null;
+          nextPlayTime = 0;
+        }
       } else {
-        voiceLabel.textContent = "Listening…";
+        voiceBtn.title = "Switch to Text Mode";
+        voiceBtn.innerHTML = `
+          <svg width="20" height="20" viewBox="0 0 24 24" fill="currentColor">
+            <path d="M12 14c1.66 0 3-1.34 3-3V5c0-1.66-1.34-3-3-3S9 3.34 9 5v6c0 1.66 1.34 3 3 3z" />
+            <path d="M17 11c0 2.76-2.24 5-5 5s-5-2.24-5-5H5c0 3.53 2.61 6.43 6 6.92V21h2v-3.08c3.39-.49 6-3.39 6-6.92h-2z" />
+          </svg>
+        `;
+        voiceLabel.textContent = recording ? "Listening…" : "Voice active — speak or type";
         voiceBar.classList.remove("via-muted");
-        avatarRing.classList.add("via-listening");
-        wave.classList.add("via-wave-active");
-        drawWave();
+        if (recording) {
+          avatarRing.classList.add("via-listening");
+          wave.classList.add("via-wave-active");
+          drawWave();
+        }
       }
     }
 
@@ -1738,6 +1874,62 @@ registerProcessor("uni-audio-processor", AudioProcessor);
       };
       reader.readAsDataURL(file);
     });
+
+    // ── Panel resize ──────────────────────────────────────────────────────────────
+    (function initResize() {
+      const handle = document.getElementById("resizeHandle");
+      const panel = document.querySelector(".via-panel");
+      const app = document.querySelector(".app");
+      const STORAGE_KEY = "waypoint_panel_width";
+      const MIN_W = 280, MIN_SIDEBAR = 240;
+
+      // Restore saved width
+      const saved = localStorage.getItem(STORAGE_KEY);
+      if (saved) panel.style.width = saved + "px";
+
+      let dragging = false;
+      let isVertical = false; // true on mobile (column layout)
+
+      function startDrag(e) {
+        isVertical = window.innerWidth <= 767;
+        dragging = true;
+        handle.classList.add("dragging");
+        document.body.style.cursor = isVertical ? "row-resize" : "col-resize";
+        document.body.style.userSelect = "none";
+        e.preventDefault();
+      }
+
+      function onDrag(clientX, clientY) {
+        if (!dragging) return;
+        const rect = app.getBoundingClientRect();
+        if (isVertical) {
+          const newH = clientY - rect.top;
+          const maxH = rect.height - MIN_SIDEBAR - 6;
+          panel.style.height = Math.max(200, Math.min(maxH, newH)) + "px";
+        } else {
+          const newW = clientX - rect.left;
+          const maxW = rect.width - MIN_SIDEBAR - 6;
+          panel.style.width = Math.max(MIN_W, Math.min(maxW, newW)) + "px";
+        }
+      }
+
+      function stopDrag() {
+        if (!dragging) return;
+        dragging = false;
+        handle.classList.remove("dragging");
+        document.body.style.cursor = "";
+        document.body.style.userSelect = "";
+        if (!isVertical) localStorage.setItem(STORAGE_KEY, parseInt(panel.style.width));
+      }
+
+      handle.addEventListener("mousedown", startDrag);
+      document.addEventListener("mousemove", e => onDrag(e.clientX, e.clientY));
+      document.addEventListener("mouseup", stopDrag);
+
+      handle.addEventListener("touchstart", startDrag, { passive: false });
+      document.addEventListener("touchmove", e => { if (dragging) { onDrag(e.touches[0].clientX, e.touches[0].clientY); e.preventDefault(); } }, { passive: false });
+      document.addEventListener("touchend", stopDrag);
+    })();
 
     // ── Boot ──────────────────────────────────────────────────────────────────────
     connect();

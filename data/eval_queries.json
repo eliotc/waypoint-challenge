@@ -386,5 +386,32 @@
       "expected_cards": "booking",
       "expected_keywords_in_cards": ["booking_id", "party_size", "preferred_date"]
     }
+  },
+
+  {
+    "id": "V07",
+    "layer": 3,
+    "description": "Vision — academic award certificate → merit scholarship journey → next steps",
+    "image_description": "A photo of an academic award certificate — e.g. 'Award of Academic Excellence, 4.0 GPA, School Dux' or similar high-achievement recognition",
+    "image_signals": ["certificate", "award", "academic excellence", "GPA", "dux", "achievement", "merit"],
+    "notes": "Key regression case: in a second run Clara failed to immediately surface the Kingsford Academic Excellence Scholarship. Turn 1 must mention merit scholarships without calling a tool. Turn 2 must call search_scholarships and return merit-specific results. Turn 3 validates that Clara can pivot to actionable next steps (application process, deadlines, contact) via search_knowledge.",
+    "turn_1": {
+      "input": "[image shared]",
+      "expected_clara_behaviour": "Recognise and describe the academic achievement visible in the certificate (e.g. 4.0 GPA, School Dux, Excellence award). Connect it to merit-based scholarships at Kingsford — specifically mention that high achievers may be eligible. Offer to search. Must NOT call any tool.",
+      "expected_tool": null,
+      "expected_keywords_in_response": ["award", "achievement", "merit", "scholarship"]
+    },
+    "turn_2": {
+      "input": "Yes, tell me more — what merit scholarships am I eligible for?",
+      "expected_tool": "search_scholarships",
+      "expected_cards": "scholarships",
+      "expected_keywords_in_cards": ["Merit", "annual_value_aud", "eligibility", "Kingsford Academic Excellence"]
+    },
+    "turn_3": {
+      "input": "That's great. How do I apply, and what are the deadlines?",
+      "expected_tool": "search_knowledge",
+      "expected_cards": "info",
+      "expected_keywords_in_cards": ["scholarship", "application", "deadline"]
+    }
   }
 ]

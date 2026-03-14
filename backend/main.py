@@ -141,8 +141,8 @@ app.add_middleware(
 # Resets hourly. Sufficient for a hackathon demo — no extra dependencies needed.
 _ip_active: dict[str, int] = defaultdict(int)       # IP → active connections
 _ip_hourly: dict[str, list[float]] = defaultdict(list)  # IP → connection timestamps
-_MAX_CONCURRENT = 2
-_MAX_PER_HOUR   = 20
+_MAX_CONCURRENT = 5
+_MAX_PER_HOUR   = 100
 
 def _check_rate_limit(ip: str) -> str | None:
     """Return an error message if the IP is rate-limited, else None."""

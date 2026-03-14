@@ -114,10 +114,10 @@ Key routing challenges tested beyond Layer 2:
 
 ## Layer 3 — Vision Flows (manual only)
 
-`data/eval_queries.json` contains 6 vision test cases (V01–V06). These are **manual
+`data/eval_queries.json` contains 7 vision test cases (V01–V07). These are **manual
 checklists**, not automated — they require real images shared via the voice UI.
 
-| ID | Image type | Expected two-turn journey |
+| ID | Image type | Expected journey |
 |----|-----------|-----------------------------|
 | V01 | Student artwork | Describe → offer `search_courses` (Creative Arts) |
 | V02 | Merit award certificate | Acknowledge achievement → offer `search_scholarships` |
@@ -125,6 +125,7 @@ checklists**, not automated — they require real images shared via the voice UI
 | V04 | Hospital / clinical setting | Connect to health programs → `search_courses` |
 | V05 | Passport / international context | Mention visa/support → `search_knowledge` |
 | V06 | Campus building photo | Invite visit → `book_campus_tour` |
+| V07 ⚠️ | Academic excellence certificate (4.0 GPA / School Dux) | Describe award + mention merit scholarships (no tool) → `search_scholarships` (Turn 2) → `search_knowledge` application/deadlines (Turn 3). **Regression case**: Clara must proactively name merit scholarships in Turn 1; a second live run failed to surface the Kingsford Academic Excellence Scholarship without explicit prompting. |
 
 ---
 
@@ -183,4 +184,4 @@ confidence for submission. Neither alone is enough.
 ```
 
 **Layer 3 (vision)** — add a `layer: 3` object with `turn_1` / `turn_2` structure
-following the existing V01–V06 pattern.
+following the existing V01–V07 pattern.

@@ -1,0 +1,507 @@
+{
+  "summary": {
+    "total": 64,
+    "passed": 63,
+    "pct": 98
+  },
+  "layer1": [
+    {
+      "test": "get_course_detail('Master of Data Science')",
+      "passed": true,
+      "failures": [],
+      "latency_ms": 811
+    },
+    {
+      "test": "get_course_detail('zzz-no-such-course-xyz')",
+      "passed": true,
+      "failures": [],
+      "latency_ms": 556
+    },
+    {
+      "test": "search_courses('software engineering')",
+      "passed": true,
+      "failures": [],
+      "latency_ms": 459
+    },
+    {
+      "test": "search_courses('nursing', faculty='Health Sciences')",
+      "passed": true,
+      "failures": [],
+      "latency_ms": 565
+    },
+    {
+      "test": "search_courses('business management')",
+      "passed": true,
+      "failures": [],
+      "latency_ms": 476
+    },
+    {
+      "test": "recommend_courses(maths + problem solving)",
+      "passed": true,
+      "failures": [],
+      "latency_ms": 549
+    },
+    {
+      "test": "recommend_courses(creative arts, Online mode)",
+      "passed": true,
+      "failures": [],
+      "latency_ms": 482
+    },
+    {
+      "test": "search_events(no filter \u2014 next 30 days)",
+      "passed": true,
+      "failures": [],
+      "latency_ms": 37
+    },
+    {
+      "test": "search_events(type=CampusTour)",
+      "passed": true,
+      "failures": [],
+      "latency_ms": 19
+    },
+    {
+      "test": "search_knowledge('ATAR requirements for medicine')",
+      "passed": true,
+      "failures": [],
+      "latency_ms": 456
+    },
+    {
+      "test": "search_knowledge('HECS-HELP domestic student fees')",
+      "passed": true,
+      "failures": [],
+      "latency_ms": 509
+    },
+    {
+      "test": "search_knowledge('student visa requirements international')",
+      "passed": true,
+      "failures": [],
+      "latency_ms": 524
+    },
+    {
+      "test": "search_knowledge('on-campus accommodation options')",
+      "passed": true,
+      "failures": [],
+      "latency_ms": 537
+    },
+    {
+      "test": "search_knowledge('graduate salary career outcomes')",
+      "passed": true,
+      "failures": [],
+      "latency_ms": 466
+    },
+    {
+      "test": "search_knowledge('campus facilities library gym')",
+      "passed": true,
+      "failures": [],
+      "latency_ms": 471
+    },
+    {
+      "test": "search_scholarships(general query \u2014 no type filter)",
+      "passed": true,
+      "failures": [],
+      "latency_ms": 496
+    },
+    {
+      "test": "search_scholarships(type=Merit)",
+      "passed": true,
+      "failures": [],
+      "latency_ms": 513
+    },
+    {
+      "test": "search_scholarships(type=Equity)",
+      "passed": true,
+      "failures": [],
+      "latency_ms": 510
+    },
+    {
+      "test": "search_scholarships(type=International) \u2014 exactly 1 by design",
+      "passed": true,
+      "failures": [],
+      "latency_ms": 512
+    },
+    {
+      "test": "search_scholarships(type=Faculty)",
+      "passed": true,
+      "failures": [],
+      "latency_ms": 518
+    },
+    {
+      "test": "book_campus_tour(valid booking)",
+      "passed": true,
+      "failures": [],
+      "latency_ms": 19
+    },
+    {
+      "test": "book_campus_tour(party_size=10 \u2014 out of range)",
+      "passed": true,
+      "failures": [],
+      "latency_ms": 0
+    },
+    {
+      "test": "book_campus_tour(bad date format)",
+      "passed": true,
+      "failures": [],
+      "latency_ms": 0
+    }
+  ],
+  "layer2": [
+    {
+      "id": "R00",
+      "query": "Can you tell me more about the Bachelor of Nursing?",
+      "expected_tool": "get_course_detail",
+      "actual_tool": "get_course_detail",
+      "passed": true,
+      "latency_ms": 1597
+    },
+    {
+      "id": "R01",
+      "query": "What computer science courses do you offer?",
+      "expected_tool": "search_courses",
+      "actual_tool": "search_courses",
+      "passed": true,
+      "latency_ms": 1583
+    },
+    {
+      "id": "R02",
+      "query": "Do you have any engineering programs I can apply for?",
+      "expected_tool": "search_courses",
+      "actual_tool": "search_courses",
+      "passed": true,
+      "latency_ms": 1740
+    },
+    {
+      "id": "R03",
+      "query": "I'm interested in nursing or allied health \u2014 what degrees do you have?",
+      "expected_tool": "search_courses",
+      "actual_tool": "search_courses",
+      "passed": true,
+      "latency_ms": 1428
+    },
+    {
+      "id": "R04",
+      "query": "I love maths and problem solving and I'm strong in physics and logical thinking. What courses would suit me?",
+      "expected_tool": "recommend_courses",
+      "actual_tool": "recommend_courses",
+      "passed": true,
+      "latency_ms": 1430
+    },
+    {
+      "id": "R05",
+      "query": "I'm strong in science and prefer studying online. What would you recommend?",
+      "expected_tool": "recommend_courses",
+      "actual_tool": null,
+      "passed": false,
+      "latency_ms": 2232
+    },
+    {
+      "id": "R06",
+      "query": "I love art and design, and I'm strong at visual communication and drawing. Can you recommend courses for me?",
+      "expected_tool": "recommend_courses",
+      "actual_tool": "recommend_courses",
+      "passed": true,
+      "latency_ms": 1774
+    },
+    {
+      "id": "R07",
+      "query": "What events are on this month?",
+      "expected_tool": "search_events",
+      "actual_tool": "search_events",
+      "passed": true,
+      "latency_ms": 1536
+    },
+    {
+      "id": "R08",
+      "query": "Is there an open day coming up soon?",
+      "expected_tool": "search_events",
+      "actual_tool": "search_events",
+      "passed": true,
+      "latency_ms": 1844
+    },
+    {
+      "id": "R09",
+      "query": "Are there any information sessions for international students?",
+      "expected_tool": "search_events",
+      "actual_tool": "search_events",
+      "passed": true,
+      "latency_ms": 1594
+    },
+    {
+      "id": "R10",
+      "query": "I'd like to book a campus tour. My name is Alex Smith, email alex@example.com, for 2026-04-12, party of 2.",
+      "expected_tool": "book_campus_tour",
+      "actual_tool": "book_campus_tour",
+      "passed": true,
+      "latency_ms": 1861
+    },
+    {
+      "id": "R11",
+      "query": "What ATAR do I need to get into medicine?",
+      "expected_tool": "search_knowledge",
+      "actual_tool": "search_knowledge",
+      "passed": true,
+      "latency_ms": 1592
+    },
+    {
+      "id": "R12",
+      "query": "How does HECS-HELP work for domestic students?",
+      "expected_tool": "search_knowledge",
+      "actual_tool": "search_knowledge",
+      "passed": true,
+      "latency_ms": 1611
+    },
+    {
+      "id": "R13",
+      "query": "What student visa do I need to study in Australia?",
+      "expected_tool": "search_knowledge",
+      "actual_tool": "search_knowledge",
+      "passed": true,
+      "latency_ms": 1223
+    },
+    {
+      "id": "R14",
+      "query": "Is there on-campus accommodation available?",
+      "expected_tool": "search_knowledge",
+      "actual_tool": "search_knowledge",
+      "passed": true,
+      "latency_ms": 1571
+    },
+    {
+      "id": "R15",
+      "query": "What facilities does the campus have?",
+      "expected_tool": "search_knowledge",
+      "actual_tool": "search_knowledge",
+      "passed": true,
+      "latency_ms": 1615
+    },
+    {
+      "id": "R16",
+      "query": "What are the career prospects for business graduates?",
+      "expected_tool": "search_knowledge",
+      "actual_tool": "search_knowledge",
+      "passed": true,
+      "latency_ms": 1525
+    },
+    {
+      "id": "R17",
+      "query": "Are there any scholarships I can apply for?",
+      "expected_tool": "search_scholarships",
+      "actual_tool": "search_scholarships",
+      "passed": true,
+      "latency_ms": 1231
+    },
+    {
+      "id": "R18",
+      "query": "I'm an international student. Is there any financial help available?",
+      "expected_tool": "search_scholarships",
+      "actual_tool": "search_scholarships",
+      "passed": true,
+      "latency_ms": 1374
+    },
+    {
+      "id": "R19",
+      "query": "What merit scholarships does Kingsford offer for high achievers?",
+      "expected_tool": "search_scholarships",
+      "actual_tool": "search_scholarships",
+      "passed": true,
+      "latency_ms": 1698
+    },
+    {
+      "id": "R20",
+      "query": "My family is going through financial hardship. Is there any bursary support?",
+      "expected_tool": "search_scholarships",
+      "actual_tool": "search_scholarships",
+      "passed": true,
+      "latency_ms": 1843
+    },
+    {
+      "id": "R21",
+      "query": "Hi, how are you?",
+      "expected_tool": null,
+      "actual_tool": null,
+      "passed": true,
+      "latency_ms": 1533
+    },
+    {
+      "id": "R22",
+      "query": "Thanks, that's really helpful!",
+      "expected_tool": null,
+      "actual_tool": null,
+      "passed": true,
+      "latency_ms": 1199
+    },
+    {
+      "id": "R23",
+      "query": "What can you help me with?",
+      "expected_tool": null,
+      "actual_tool": null,
+      "passed": true,
+      "latency_ms": 2015
+    }
+  ],
+  "layer2b": [
+    {
+      "id": "MT01",
+      "description": "Full counselling journey \u2014 search \u2192 detail \u2192 scholarships \u2192 knowledge \u2192 events",
+      "passed": true,
+      "turns": [
+        {
+          "turn": 1,
+          "user": "I'd like to explore engineering courses.",
+          "expected_tool": "search_courses",
+          "actual_tool": "search_courses",
+          "passed": true,
+          "latency_ms": 1584
+        },
+        {
+          "turn": 2,
+          "user": "Can you give me more information on the Master of Data Science?",
+          "expected_tool": "get_course_detail",
+          "actual_tool": "get_course_detail",
+          "passed": true,
+          "latency_ms": 1596
+        },
+        {
+          "turn": 3,
+          "user": "Tell me more about scholarships.",
+          "expected_tool": "search_scholarships",
+          "actual_tool": "search_scholarships",
+          "passed": true,
+          "latency_ms": 2184
+        },
+        {
+          "turn": 4,
+          "user": "I wanted to know more about the university itself \u2014 the campus, the school.",
+          "expected_tool": "search_knowledge",
+          "actual_tool": "search_knowledge",
+          "passed": true,
+          "latency_ms": 1654
+        },
+        {
+          "turn": 5,
+          "user": "Are there any open days, campus tours, or info sessions I could attend in person?",
+          "expected_tool": "search_events",
+          "actual_tool": "search_events",
+          "passed": true,
+          "latency_ms": 1235
+        }
+      ]
+    },
+    {
+      "id": "MT02",
+      "description": "Health pathway \u2014 course search \u2192 course detail \u2192 ATAR knowledge",
+      "passed": true,
+      "turns": [
+        {
+          "turn": 1,
+          "user": "What health science programs do you offer?",
+          "expected_tool": "search_courses",
+          "actual_tool": "search_courses",
+          "passed": true,
+          "latency_ms": 1738
+        },
+        {
+          "turn": 2,
+          "user": "Tell me more about the Bachelor of Nursing.",
+          "expected_tool": "get_course_detail",
+          "actual_tool": "get_course_detail",
+          "passed": true,
+          "latency_ms": 1676
+        },
+        {
+          "turn": 3,
+          "user": "What ATAR score would I need to get in?",
+          "expected_tool": "search_knowledge",
+          "actual_tool": "search_knowledge",
+          "passed": true,
+          "latency_ms": 1576
+        },
+        {
+          "turn": 4,
+          "user": "Are there any scholarships for health students?",
+          "expected_tool": "search_scholarships",
+          "actual_tool": "search_scholarships",
+          "passed": true,
+          "latency_ms": 1126
+        }
+      ]
+    },
+    {
+      "id": "MT03",
+      "description": "Recommendation \u2192 detail \u2192 booking \u2014 personalised flow ending in tour",
+      "passed": true,
+      "turns": [
+        {
+          "turn": 1,
+          "user": "I love maths and problem solving. What degree would suit me?",
+          "expected_tool": "recommend_courses",
+          "actual_tool": "recommend_courses",
+          "passed": true,
+          "latency_ms": 1596
+        },
+        {
+          "turn": 2,
+          "user": "Can you tell me more about the Bachelor of Computer Science?",
+          "expected_tool": "get_course_detail",
+          "actual_tool": "get_course_detail",
+          "passed": true,
+          "latency_ms": 1600
+        },
+        {
+          "turn": 3,
+          "user": "How much does it cost and is there HECS-HELP available?",
+          "expected_tool": "search_knowledge",
+          "actual_tool": "search_knowledge",
+          "passed": true,
+          "latency_ms": 1259
+        },
+        {
+          "turn": 4,
+          "user": "I'd love to come visit the campus. Can I book a tour? My name is Sam Lee and I'm thinking of coming on April 20th.",
+          "expected_tool": "book_campus_tour",
+          "actual_tool": "book_campus_tour",
+          "passed": true,
+          "latency_ms": 4968
+        }
+      ]
+    },
+    {
+      "id": "MT04",
+      "description": "Context retention \u2014 referencing previously mentioned course without restating name",
+      "passed": true,
+      "turns": [
+        {
+          "turn": 1,
+          "user": "What cybersecurity degrees do you have?",
+          "expected_tool": "search_courses",
+          "actual_tool": "search_courses",
+          "passed": true,
+          "latency_ms": 1479
+        },
+        {
+          "turn": 2,
+          "user": "Tell me more about the cybersecurity one.",
+          "expected_tool": "get_course_detail",
+          "actual_tool": "get_course_detail",
+          "passed": true,
+          "latency_ms": 1586
+        },
+        {
+          "turn": 3,
+          "user": "Thanks, that's helpful! What about scholarships for engineering students?",
+          "expected_tool": "search_scholarships",
+          "actual_tool": "search_scholarships",
+          "passed": true,
+          "latency_ms": 1399
+        },
+        {
+          "turn": 4,
+          "user": "Are there any upcoming info sessions or open days for the engineering faculty?",
+          "expected_tool": "search_events",
+          "actual_tool": "search_events",
+          "passed": true,
+          "latency_ms": 1606
+        }
+      ]
+    }
+  ]
+}
