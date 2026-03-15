@@ -214,33 +214,23 @@ async def websocket_endpoint(websocket: WebSocket, client_id: str):
 
     register_display_callback(client_id, loop, send_card)
 
-    # Use a consistent session per client_id to preserve history
-    # if the WebSocket reconnects.
+    # Always create a fresh session — never resume history.
+    # Each page load generates a new crypto.randomUUID() as client_id, so
+    # resuming would replay previous-conversation context into the model and
+    # cause Clara to respond as if mid-conversation.
     try:
-        session = await session_service.get_session(
+        session = await session_service.create_session(
             app_name=APP_NAME,
             user_id=client_id,
-            session_id=client_id # Use client_id as session_id for persistence
+            session_id=client_id,
         )
-        if not session:
-            session = await session_service.create_session(
-                app_name=APP_NAME,
-                user_id=client_id,
-                session_id=client_id
-            )
-            log.info("ADK session created: %s", session.id)
-        else:
-            log.info("ADK session resumed: %s (history: %d events)",
-                     session.id, len(session.events))
-            _sanitize_session_events(session.events)
-
+        log.info("ADK session created: %s", session.id)
     except Exception as e:
-        # Fallback to fresh session if retrieval fails
         session = await session_service.create_session(
             app_name=APP_NAME,
             user_id=client_id,
         )
-        log.warning("ADK session fresh start (retrieval failed: %s): %s", e, session.id)
+        log.warning("ADK session fallback (create failed: %s): %s", e, session.id)
 
     live_request_queue = LiveRequestQueue()
     first_input_at = None
